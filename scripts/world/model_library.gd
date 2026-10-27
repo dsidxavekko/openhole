@@ -69,6 +69,7 @@ func _load(path: String) -> Dictionary:
 	var probe := scene.instantiate()
 	var acc: Array = [null]
 	_merge_aabb(probe, Transform3D.IDENTITY, acc)
+	_fix_materials(probe)
 	probe.free()
 	var info := {"scene": scene, "aabb": acc[0] if acc[0] != null else AABB(Vector3(-0.5, 0, -0.5), Vector3.ONE)}
 	_cache[path] = info
@@ -84,3 +85,18 @@ static func _merge_aabb(n: Node, xf: Transform3D, acc: Array) -> void:
 		acc[0] = a if acc[0] == null else (acc[0] as AABB).merge(a)
 	for c in n.get_children():
 		_merge_aabb(c, t, acc)
+
+
+## Some Kenney kits (nature, furniture) export metallic = 1, which renders black
+## without a sky to reflect. Materials are shared resources, so fixing them once
+## fixes every instance.
+static func _fix_materials(n: Node) -> void:
+	if n is MeshInstance3D and (n as MeshInstance3D).mesh:
+		var mesh: Mesh = (n as MeshInstance3D).mesh
+		for i in mesh.get_surface_count():
+			var mat := mesh.surface_get_material(i) as BaseMaterial3D
+			if mat and mat.metallic > 0.0:
+				mat.metallic = 0.0
+				mat.roughness = 0.9
+	for c in n.get_children():
+		_fix_materials(c)

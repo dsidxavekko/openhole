@@ -62,6 +62,7 @@ func build(spec: Dictionary) -> Edible:
 	var s: Vector3 = spec.s
 	var e := Edible.new()
 	e.kind = kind
+	e.magnetic = kind != "building" and kind != "house"
 
 	var model_kind := kind
 	if kind == "building" and s.y > 26.0:
@@ -74,6 +75,7 @@ func build(spec: Dictionary) -> Edible:
 
 	e.extent = maxf(size.x, size.z)
 	e.height = size.y
+	e.size = size
 	e.fit_size = HoleRules.fit_size(e.extent, size.y)
 	e.points = HoleRules.points_for_size(size)
 	e.mass = clampf(size.x * size.y * size.z * 25.0, 1.0, 4000.0)

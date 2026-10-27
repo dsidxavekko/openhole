@@ -51,6 +51,7 @@ var lanes := {}           # lane key -> Array[Edible], leader first
 var _traffic_time := 0.0
 var powerups: Array[Powerup] = []
 var _powerup_timers: Array[float] = []
+var _flung := {}          # diagnostics: objects thrown into the air
 
 
 func _ready() -> void:
@@ -174,6 +175,9 @@ func _spawn_city(seed_value: int, blocks: int) -> void:
 	var factory := EdibleFactory.new()
 	for spec in CityGen.generate(seed_value, blocks, GameState.map_theme):
 		var e := factory.build(spec)
+		if _overlaps_existing(e):
+			e.free()
+			continue
 		world.add_child(e)
 		_grid_add(e)
 		total_points += e.points
@@ -214,6 +218,26 @@ func _spawn_point(i: int, count: int) -> Vector3:
 	var road_z: float = round((p.z + half - CityGen.ROAD / 2.0) / CityGen.PITCH) * CityGen.PITCH - half + CityGen.ROAD / 2.0
 	p.z = road_z
 	return p
+
+
+## Footprint rectangle (x0, z0, x1, z1) of a spawned object, yaw included.
+func _footprint(e: Edible) -> Rect2:
+	var s := e.size
+	var c := absf(cos(e.rotation.y))
+	var sn := absf(sin(e.rotation.y))
+	var hx := (c * s.x + sn * s.z) * 0.5
+	var hz := (sn * s.x + c * s.z) * 0.5
+	return Rect2(e.position.x - hx, e.position.z - hz, hx * 2.0, hz * 2.0)
+
+
+## Spawned objects must not overlap, otherwise physics flings them apart on wake.
+func _overlaps_existing(e: Edible) -> bool:
+	var r := _footprint(e).grow(-0.05)
+	for bucket in _cells_around(e.position, e.extent * 0.5 + 10.0):
+		for o: Edible in bucket:
+			if r.intersects(_footprint(o)):
+				return true
+	return false
 
 
 # --- Spatial grid ----------------------------------------------------------
@@ -336,21 +360,20 @@ func _swallow_step() -> void:
 				var dx := e.position.x - hp.x
 				var dz := e.position.z - hp.z
 				var d := sqrt(dx * dx + dz * dz)
-				var touching := d <= r + e.extent * 0.6 + 0.5
-				var fits := HoleRules.fits(e.fit_size, r)
+				var touching := d <= r + e.extent * 0.5 + 0.3
+				var pulled := e.magnetic and d < mr
 				# Things that do not fit stay static: the hole slides under them.
-				if not fits or not (touching or d < mr):
+				if not (touching or pulled) or not HoleRules.fits(e.fit_size, r):
 					continue
 				_wake(e)
-				var pull := Vector3(-dx, 0, -dz) / maxf(d, 0.01)
-				if d < r * 0.92:
+				if d < r + e.extent * 0.3:
+					# Overlaps the hole: from now on it rests on the hole's lip
+					# and tips over the edge by itself.
 					_start_fall(e, h)
-				elif touching:
-					# Object hangs over the edge: pull it in.
-					e.apply_central_force(pull * e.mass * 14.0)
-				else:
-					# Magnet: weaker the farther away.
-					e.apply_central_force(pull * e.mass * ms * (1.0 - d / mr))
+				elif e.magnetic:
+					var pull := Vector3(-dx, 0, -dz) / maxf(d, 0.01)
+					var k := 4.0 if touching else ms * (1.0 - d / mr)
+					e.apply_central_force(pull * e.mass * k)
 
 
 func _wake(e: Edible) -> void:
@@ -493,8 +516,18 @@ func _powerup_step(delta: float) -> void:
 func _start_fall(e: Edible, h: Hole) -> void:
 	e.falling_into = h
 	e.collision_mask = EDIBLE_LAYER | WELL_LAYER
+	e.gravity_scale = 1.6
 	e.sleeping = false
-	e.apply_central_impulse(Vector3.DOWN * e.mass * 0.5)
+	# Tip it over towards the middle of the hole: things narrower than the hole
+	# would otherwise sink straight down, which looks like falling through the ground.
+	var to_c := Vector3(h.position.x - e.position.x, 0, h.position.z - e.position.z)
+	if to_c.length() < 0.05:
+		var a := randf() * TAU
+		to_c = Vector3(cos(a), 0, sin(a))
+	to_c = to_c.normalized()
+	var spin := clampf(0.8 + e.height * 0.25, 0.8, 2.5)
+	e.angular_velocity += Vector3.UP.cross(to_c) * spin
+	e.linear_velocity += to_c * 0.6
 	falling.append(e)
 
 
@@ -510,17 +543,22 @@ func _falling_step() -> void:
 			falling.remove_at(i)
 			_eat(e, h)
 			continue
-		# Still on the surface but the hole moved away: put it back on the ground.
 		var bottom := e.position.y - e.height * 0.5
-		if bottom > -0.15:
-			var gone := not h.alive
-			if not gone:
-				var d := Vector2(e.position.x - h.position.x, e.position.z - h.position.z).length()
-				gone = d > h.radius + 0.1
-			if gone:
-				e.falling_into = null
-				e.collision_mask = GROUND_LAYER | EDIBLE_LAYER
-				falling.remove_at(i)
+		var d := INF
+		if h.alive:
+			d = Vector2(e.position.x - h.position.x, e.position.z - h.position.z).length()
+		var off_hole := d > h.radius + e.extent * 0.5 + 0.3
+		if off_hole and bottom > -0.1:
+			# Fully back on solid ground (the hole moved away): normal object again.
+			e.falling_into = null
+			e.collision_mask = GROUND_LAYER | EDIBLE_LAYER
+			e.gravity_scale = 1.0
+			falling.remove_at(i)
+		elif off_hole and (not h.alive or d > h.radius + h.lip_width()):
+			# Already partly underground and nothing holds it: it is hidden anyway,
+			# count it as eaten instead of popping it back up through the asphalt.
+			falling.remove_at(i)
+			_eat(e, h)
 
 
 func _eat(e: Edible, h: Hole) -> void:
@@ -554,6 +592,8 @@ func _rebin() -> void:
 			awake.erase(e)
 			e.queue_free()
 			continue
+		if e.position.y - e.height * 0.5 > 2.5:
+			_flung[e.get_instance_id()] = true
 		var c := _cell_of(e.position)
 		if c != e.cell:
 			_grid_remove(e)
@@ -807,7 +847,7 @@ func _finish() -> void:
 	var all_magnets := 0
 	for h in holes:
 		all_magnets += h.magnets_taken
-	print("MATCH_END mode=%s points=%d eaten=%d/%d level=%d magnets=%d/%d movers_left=%d" % [key, player.points,
-		eaten_count, total_count, player.level, player.magnets_taken, all_magnets, movers.size()])
+	print("MATCH_END mode=%s points=%d eaten=%d/%d level=%d magnets=%d/%d movers_left=%d flung=%d" % [key, player.points,
+		eaten_count, total_count, player.level, player.magnets_taken, all_magnets, movers.size(), _flung.size()])
 	if GameState.autoplay:
 		get_tree().quit()

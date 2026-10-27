@@ -7,6 +7,7 @@ signal leveled_up(level: int)
 
 const WELL_LAYER := 4
 const SEGMENTS := 20
+const LIP_SEGMENTS := 24
 const WELL_DEPTH := 10.0
 const WELL_SHADER := preload("res://scripts/hole/well.gdshader")
 
@@ -27,6 +28,7 @@ var controller: RefCounted = null
 
 var _well_body: AnimatableBody3D
 var _segments: Array[CollisionShape3D] = []
+var _lip: Array[CollisionShape3D] = []
 var _well_mesh: MeshInstance3D
 var _label: Label3D
 var _shape_radius := -1.0
@@ -50,6 +52,13 @@ func _ready() -> void:
 		cs.shape = BoxShape3D.new()
 		_well_body.add_child(cs)
 		_segments.append(cs)
+	# The "lip": solid ground around the hole that only falling objects collide with,
+	# so they rest on it and tip over the edge instead of dropping straight down.
+	for i in LIP_SEGMENTS:
+		var cs := CollisionShape3D.new()
+		cs.shape = BoxShape3D.new()
+		_well_body.add_child(cs)
+		_lip.append(cs)
 
 	var cyl := CylinderMesh.new()
 	cyl.top_radius = 0.5
@@ -143,6 +152,10 @@ func give_magnet(seconds: float) -> void:
 	magnets_taken += 1
 
 
+func lip_width() -> float:
+	return radius * 2.0 + 2.0
+
+
 func snap_radius() -> void:
 	radius = target_radius
 	_apply_radius()
@@ -174,4 +187,14 @@ func _apply_radius() -> void:
 		var cs := _segments[i]
 		(cs.shape as BoxShape3D).size = Vector3(seg_w, WELL_DEPTH, thickness)
 		cs.position = Vector3(sin(a) * ring_r, -WELL_DEPTH / 2.0, cos(a) * ring_r)
+		cs.rotation = Vector3(0, a, 0)
+	var lw := lip_width()
+	var mid := radius + lw / 2.0
+	var outer := radius + lw
+	var lip_w := TAU * outer / LIP_SEGMENTS * 1.05
+	for i in LIP_SEGMENTS:
+		var a := TAU * (i + 0.5) / LIP_SEGMENTS
+		var cs := _lip[i]
+		(cs.shape as BoxShape3D).size = Vector3(lip_w, 0.5, lw)
+		cs.position = Vector3(sin(a) * mid, -0.25, cos(a) * mid)
 		cs.rotation = Vector3(0, a, 0)
