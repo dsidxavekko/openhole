@@ -1,9 +1,13 @@
 class_name BotAI
 extends RefCounted
-## Simple state machine: flee bigger holes, chase smaller ones,
-## otherwise go for the most valuable food nearby, otherwise wander.
+## Simple state machine: flee bigger holes, sometimes chase smaller ones,
+## otherwise go for the most valuable food (or a magnet) nearby, otherwise wander.
 
 enum State { WANDER, FOOD, CHASE, FLEE }
+
+const NO_CHASE_START := 15.0
+const CHASE_LIMIT := 3.0
+const CHASE_COOLDOWN := 5.0
 
 var hole: Hole
 var game: Node
@@ -11,6 +15,9 @@ var state: int = State.WANDER
 var target := Vector3.ZERO
 var skill := 0.7
 var _timer := 0.0
+var _age := 0.0
+var _chase_time := 0.0
+var _chase_cooldown := 0.0
 
 
 func _init(p_hole: Hole, p_game: Node, p_skill: float) -> void:
@@ -21,9 +28,20 @@ func _init(p_hole: Hole, p_game: Node, p_skill: float) -> void:
 
 
 func update(delta: float) -> void:
+	_age += delta
+	_chase_cooldown -= delta
+	if state == State.CHASE:
+		_chase_time += delta
+		if _chase_time > CHASE_LIMIT:
+			# Give up for a while.
+			_chase_cooldown = CHASE_COOLDOWN
+			_chase_time = 0.0
+			_timer = 0.0
+	else:
+		_chase_time = 0.0
 	_timer -= delta
 	if _timer <= 0.0:
-		_timer = randf_range(0.25, 0.45) / maxf(skill, 0.3)
+		_timer = randf_range(0.32, 0.6) / maxf(skill, 0.3)
 		_decide()
 	var to := target - hole.position
 	var desired := Vector2(to.x, to.z)
@@ -32,7 +50,7 @@ func update(delta: float) -> void:
 		_timer = minf(_timer, 0.05)
 	else:
 		desired = desired.normalized()
-	hole.move_dir = hole.move_dir.lerp(desired, clampf(delta * 6.0, 0.0, 1.0))
+	hole.move_dir = hole.move_dir.lerp(desired, clampf(delta * 4.0, 0.0, 1.0))
 
 
 func _decide() -> void:
@@ -44,8 +62,8 @@ func _decide() -> void:
 		away.y = 0.0
 		target = game.clamp_to_play_area(hole.position + away.normalized() * (12.0 + r * 2.0))
 		return
-	if randf() < skill:
-		var prey: Hole = game.find_prey(hole, 6.0 + r * 3.0)
+	if _age > NO_CHASE_START and _chase_cooldown <= 0.0 and randf() < skill:
+		var prey: Hole = game.find_prey(hole, 4.0 + r * 2.0)
 		if prey:
 			state = State.CHASE
 			target = prey.position

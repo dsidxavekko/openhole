@@ -104,8 +104,10 @@ func set_time(seconds: float) -> void:
 	_timer_label.modulate = Color(1, 0.4, 0.4) if s <= 10 else Color.WHITE
 
 
-func set_level(level: int, progress: float) -> void:
+func set_level(level: int, progress: float, magnet_left := 0.0) -> void:
 	_level_label.text = tr("LEVEL") % level
+	if magnet_left > 0.0:
+		_level_label.text += "  ·  " + tr("MAGNET_LEFT") % int(ceil(magnet_left))
 	_level_bar.value = progress
 
 

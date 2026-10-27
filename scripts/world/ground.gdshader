@@ -13,7 +13,7 @@ uniform float block_size = 30.0;
 uniform float pitch = 42.0;
 uniform float road = 12.0;
 uniform float sidewalk = 3.0;
-uniform vec3 grass_color : source_color = vec3(0.56, 0.74, 0.45);
+uniform vec3 grass_color : source_color = vec3(0.42, 0.62, 0.32);
 uniform vec3 walk_color : source_color = vec3(0.78, 0.78, 0.76);
 uniform vec3 road_color : source_color = vec3(0.30, 0.31, 0.34);
 uniform vec3 line_color : source_color = vec3(0.95, 0.92, 0.75);
@@ -85,5 +85,6 @@ void fragment() {
 		col = mix(col, vec3(1.0, 0.3, 0.3), edge);
 	}
 	ALBEDO = col;
-	ROUGHNESS = 0.95;
+	ROUGHNESS = 1.0;
+	SPECULAR = 0.0;
 }

@@ -74,11 +74,13 @@ func build(spec: Dictionary) -> Edible:
 
 	e.extent = maxf(size.x, size.z)
 	e.height = size.y
+	e.fit_size = HoleRules.fit_size(e.extent, size.y)
 	e.points = HoleRules.points_for_size(size)
 	e.mass = clampf(size.x * size.y * size.z * 25.0, 1.0, 4000.0)
 	e.collision_layer = EDIBLE_LAYER
 	e.collision_mask = GROUND_LAYER | EDIBLE_LAYER
-	e.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
+	e.moving = spec.get("m", false)
+	e.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC if e.moving else RigidBody3D.FREEZE_MODE_STATIC
 	e.freeze = true
 	e.position = spec.p + Vector3(0, size.y / 2.0, 0)
 	e.rotation.y = spec.r

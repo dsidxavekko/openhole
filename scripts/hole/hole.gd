@@ -21,6 +21,8 @@ var move_dir := Vector2.ZERO
 var alive := true
 var respawn_timer := 0.0
 var out_of_zone := 0.0
+var magnet_time := 0.0
+var magnets_taken := 0
 var controller: RefCounted = null
 
 var _well_body: AnimatableBody3D
@@ -28,6 +30,7 @@ var _segments: Array[CollisionShape3D] = []
 var _well_mesh: MeshInstance3D
 var _label: Label3D
 var _shape_radius := -1.0
+var _ring: MeshInstance3D
 
 
 func setup(p_name: String, p_color: Color, p_player: bool) -> void:
@@ -72,6 +75,22 @@ func _ready() -> void:
 	_label.modulate = color.lightened(0.3)
 	_label.outline_modulate = Color(0, 0, 0, 0.8)
 	add_child(_label)
+
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.92
+	torus.outer_radius = 1.0
+	torus.rings = 48
+	torus.ring_segments = 6
+	var ring_mat := StandardMaterial3D.new()
+	ring_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	ring_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ring_mat.albedo_color = Color(color, 0.55)
+	_ring = MeshInstance3D.new()
+	_ring.mesh = torus
+	_ring.material_override = ring_mat
+	_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_ring.visible = false
+	add_child(_ring)
 	_apply_radius()
 
 
@@ -98,9 +117,30 @@ func step(delta: float, bound: float) -> void:
 	var dir := move_dir.limit_length(1.0)
 	position.x = clampf(position.x + dir.x * speed() * delta, -bound, bound)
 	position.z = clampf(position.z + dir.y * speed() * delta, -bound, bound)
+	if magnet_time > 0.0:
+		magnet_time -= delta
+		var pulse := 1.0 + 0.08 * sin(Time.get_ticks_msec() * 0.012)
+		var rr := magnet_radius() * pulse
+		_ring.scale = Vector3(rr, rr * 0.4, rr)
+		_ring.position.y = 0.15
+		_ring.visible = magnet_time > 0.0
 	if not is_equal_approx(radius, target_radius):
 		radius = move_toward(radius, target_radius, delta * maxf(1.0, target_radius * 0.8))
 		_apply_radius()
+
+
+## Weak permanent pull, much stronger while a magnet bonus is active.
+func magnet_radius() -> float:
+	return radius * 2.5 + 8.0 if magnet_time > 0.0 else radius * 1.6 + 1.5
+
+
+func magnet_strength() -> float:
+	return 18.0 if magnet_time > 0.0 else 6.0
+
+
+func give_magnet(seconds: float) -> void:
+	magnet_time = seconds
+	magnets_taken += 1
 
 
 func snap_radius() -> void:
@@ -111,6 +151,9 @@ func snap_radius() -> void:
 func set_alive(value: bool) -> void:
 	alive = value
 	visible = value
+	if not value:
+		magnet_time = 0.0
+		_ring.visible = false
 	_well_body.collision_layer = WELL_LAYER if value else 0
 
 

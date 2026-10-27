@@ -33,3 +33,5 @@ NEW_RECORD,New record!,Новий рекорд!
 MAP_SEED,Map seed: %d,Seed мапи: %d
 PLAY_AGAIN,Play again,Ще раз
 MENU,Menu,Меню
+MAGNET,Magnet!,Магніт!
+MAGNET_LEFT,Magnet: %ds,Магніт: %d с
