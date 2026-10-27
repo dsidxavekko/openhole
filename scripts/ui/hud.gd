@@ -15,6 +15,7 @@ var _notice: Label
 var _results: PanelContainer
 var _results_box: VBoxContainer
 var _notice_time := 0.0
+var _fps: Label
 
 
 func _ready() -> void:
@@ -62,6 +63,12 @@ func _ready() -> void:
 	_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(_notice)
 
+	_fps = _label(20, HORIZONTAL_ALIGNMENT_LEFT)
+	_fps.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	_fps.position = Vector2(12, -36)
+	_fps.modulate = Color(1, 1, 1, 0.6)
+	root.add_child(_fps)
+
 	_results = PanelContainer.new()
 	_results.set_anchors_preset(Control.PRESET_CENTER)
 	_results.custom_minimum_size = Vector2(560, 0)
@@ -84,6 +91,7 @@ func _label(size: int, align: HorizontalAlignment) -> Label:
 
 
 func _process(delta: float) -> void:
+	_fps.text = "%d FPS" % Engine.get_frames_per_second()
 	if _notice_time > 0.0:
 		_notice_time -= delta
 		if _notice_time <= 0.0:
