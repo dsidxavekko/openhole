@@ -7,6 +7,8 @@ const GROWTH := 1.28
 const MAX_LEVEL := 16
 const FIT_FACTOR := 0.92
 const EAT_HOLE_RATIO := 1.2
+## Tall things count as wider: a skyscraper needs a big hole, not just its base.
+const HEIGHT_WEIGHT := 0.3
 
 
 static func radius_for_level(level: int) -> float:
@@ -38,9 +40,14 @@ static func level_progress(points: int) -> float:
 	return clampf(float(points - a) / float(b - a), 0.0, 1.0)
 
 
-## `extent` is the largest horizontal dimension of an object.
-static func fits(extent: float, radius: float) -> bool:
-	return extent < radius * 2.0 * FIT_FACTOR
+## Effective size used for "does it fit": base width or a share of the height.
+static func fit_size(extent: float, height: float) -> float:
+	return maxf(extent, height * HEIGHT_WEIGHT)
+
+
+## `size` is the effective size from fit_size().
+static func fits(size: float, radius: float) -> bool:
+	return size < radius * 2.0 * FIT_FACTOR
 
 
 static func can_eat_hole(big_r: float, small_r: float, dist: float) -> bool:

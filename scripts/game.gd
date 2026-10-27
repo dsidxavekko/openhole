@@ -10,6 +10,10 @@ const MAX_HOLES := 16
 const RESPAWN_TIME := 3.0
 const ZONE_OUT_LIMIT := 4.0
 const CAM_PITCH := 65.0
+const POWERUP_COUNT := 5
+const POWERUP_RESPAWN := 20.0
+## Traffic light cycle: horizontal green, all red, vertical green, all red.
+const LIGHT_CYCLE := 16.0
 const GROUND_SHADER := preload("res://scripts/world/ground.gdshader")
 
 const HOLE_COLORS := [Color("4cc9f0"), Color("f72585"), Color("ffd60a"), Color("80ed99"),
@@ -41,6 +45,12 @@ var _rebin_timer := 0.0
 var _hud_timer := 0.0
 var _vibrate_cooldown := 0.0
 var _player_bot: BotAI = null
+var half_extent := 100.0
+var movers := {}          # Edible -> true (driving cars)
+var lanes := {}           # lane key -> Array[Edible], leader first
+var _traffic_time := 0.0
+var powerups: Array[Powerup] = []
+var _powerup_timers: Array[float] = []
 
 
 func _ready() -> void:
@@ -50,9 +60,12 @@ func _ready() -> void:
 	var blocks := GameState.city_blocks()
 	var half := CityGen.map_extent(blocks) / 2.0
 	bound = half - 2.0
+	half_extent = half
 	_build_ground(half)
 	_spawn_city(GameState.resolve_seed(), blocks)
 	_spawn_holes()
+	for i in POWERUP_COUNT:
+		_spawn_powerup()
 
 	hud = Hud.new()
 	add_child(hud)
@@ -70,7 +83,11 @@ func _ready() -> void:
 
 ## Dev helper: "-- --autoplay --screenshot=/path/shot.png" saves a frame after 8 s.
 func _take_screenshot(path: String) -> void:
-	await get_tree().create_timer(8.0).timeout
+	var delay := 8.0
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--shot-delay="):
+			delay = arg.trim_prefix("--shot-delay=").to_float()
+	await get_tree().create_timer(delay).timeout
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png(path)
 	print("SCREENSHOT ", path)
@@ -102,7 +119,7 @@ func _build_environment() -> void:
 
 	sun = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-55, -35, 0)
-	sun.light_energy = 0.95
+	sun.light_energy = 0.85
 	sun.shadow_enabled = true
 	sun.shadow_normal_bias = 1.5
 	sun.shadow_blur = 1.5
@@ -161,6 +178,9 @@ func _spawn_city(seed_value: int, blocks: int) -> void:
 		_grid_add(e)
 		total_points += e.points
 		total_count += 1
+		if e.moving:
+			_add_mover(e)
+	_sort_lanes()
 
 
 func _spawn_holes() -> void:
@@ -179,7 +199,7 @@ func _spawn_holes() -> void:
 			if GameState.autoplay:
 				_player_bot = BotAI.new(h, self, 0.8)
 		else:
-			h.controller = BotAI.new(h, self, randf_range(0.45, 0.95))
+			h.controller = BotAI.new(h, self, randf_range(0.3, 0.7))
 		holes.append(h)
 
 
@@ -250,6 +270,8 @@ func _physics_process(delta: float) -> void:
 			if h.respawn_timer <= 0.0:
 				_respawn(h)
 
+	_traffic_step(delta)
+	_powerup_step(delta)
 	_swallow_step()
 	_falling_step()
 	if mode != GameState.Mode.SOLO:
@@ -261,6 +283,7 @@ func _physics_process(delta: float) -> void:
 	if _rebin_timer <= 0.0:
 		_rebin_timer = 0.5
 		_rebin()
+		_sort_lanes()
 
 	_update_ground()
 	_check_end()
@@ -304,27 +327,167 @@ func _swallow_step() -> void:
 			continue
 		var r := h.radius
 		var hp := h.position
-		for bucket in _cells_around(hp, r + 11.0):
+		var mr := h.magnet_radius()
+		var ms := h.magnet_strength()
+		for bucket in _cells_around(hp, maxf(r + 11.0, mr + 2.0)):
 			for e: Edible in bucket:
 				if e.falling_into != null:
 					continue
 				var dx := e.position.x - hp.x
 				var dz := e.position.z - hp.z
 				var d := sqrt(dx * dx + dz * dz)
-				if d > r + e.extent * 0.6 + 0.5:
+				var touching := d <= r + e.extent * 0.6 + 0.5
+				var fits := HoleRules.fits(e.fit_size, r)
+				# Things that do not fit stay static: the hole slides under them.
+				if not fits or not (touching or d < mr):
 					continue
-				if e.freeze:
-					e.freeze = false
-					awake[e] = true
-				e.sleeping = false
-				if not HoleRules.fits(e.extent, r):
-					continue
+				_wake(e)
+				var pull := Vector3(-dx, 0, -dz) / maxf(d, 0.01)
 				if d < r * 0.92:
 					_start_fall(e, h)
-				else:
+				elif touching:
 					# Object hangs over the edge: pull it in.
-					var pull := Vector3(-dx, 0, -dz) / maxf(d, 0.01)
 					e.apply_central_force(pull * e.mass * 14.0)
+				else:
+					# Magnet: weaker the farther away.
+					e.apply_central_force(pull * e.mass * ms * (1.0 - d / mr))
+
+
+func _wake(e: Edible) -> void:
+	if e.freeze:
+		var was_moving := e.moving
+		e.moving = false
+		movers.erase(e)
+		e.freeze = false
+		if was_moving:
+			e.linear_velocity = e.transform.basis.z * e.move_speed
+		awake[e] = true
+	e.sleeping = false
+
+
+# --- Traffic ---------------------------------------------------------------
+
+func _lane_key(e: Edible) -> String:
+	var fwd := e.transform.basis.z
+	if absf(fwd.x) > 0.5:
+		return "h%d:%d" % [roundi(e.position.z * 10.0), signi(roundi(fwd.x))]
+	return "v%d:%d" % [roundi(e.position.x * 10.0), signi(roundi(fwd.z))]
+
+
+func _add_mover(e: Edible) -> void:
+	var key := _lane_key(e)
+	if not lanes.has(key):
+		lanes[key] = []
+		# One speed per lane, so cars never catch up with each other.
+		lanes[key].append(randf_range(5.0, 8.0))
+	e.move_speed = lanes[key][0]
+	lanes[key].append(e)
+	movers[e] = true
+
+
+## Leader first (largest coordinate along the driving direction); slot 0 is the speed.
+func _sort_lanes() -> void:
+	for key in lanes:
+		var list: Array = lanes[key]
+		var speed: float = list[0]
+		var cars: Array = []
+		for i in range(1, list.size()):
+			var e = list[i]
+			if is_instance_valid(e) and e.moving:
+				cars.append(e)
+		cars.sort_custom(func(a: Edible, b: Edible):
+			return a.position.dot(a.transform.basis.z) > b.position.dot(b.transform.basis.z))
+		lanes[key] = [speed] + cars
+
+
+func _green(horizontal: bool) -> bool:
+	var t := fmod(_traffic_time, LIGHT_CYCLE)
+	return t < 5.0 if horizontal else (t >= 8.0 and t < 13.0)
+
+
+## Stop position (car front, along the driving direction) before the next crossing, or INF.
+func _stop_line(front: float, dsign: float) -> float:
+	# Crossing centres in world coords are -half + ROAD/2 + j * PITCH; in "s" they are mirrored by dsign.
+	var best := INF
+	var blocks := GameState.city_blocks()
+	for j in blocks + 1:
+		var c := (-half_extent + CityGen.ROAD / 2.0 + j * CityGen.PITCH) * dsign
+		var line := c - CityGen.ROAD / 2.0 - 0.3
+		if line >= front - 0.05 and line < best:
+			best = line
+	return best
+
+
+func _traffic_step(delta: float) -> void:
+	_traffic_time += delta
+	for key in lanes:
+		var list: Array = lanes[key]
+		var horizontal: bool = (key as String).begins_with("h")
+		var green := _green(horizontal)
+		var leader_back := INF
+		for i in range(1, list.size()):
+			var e = list[i]
+			if not is_instance_valid(e) or not e.moving:
+				continue
+			var fwd: Vector3 = e.transform.basis.z
+			var dsign := signf(fwd.x if horizontal else fwd.z)
+			var half_len: float = e.extent * 0.5
+			var s: float = e.position.dot(fwd)
+			var target: float = s + e.move_speed * delta
+			if not green:
+				var line := _stop_line(s + half_len, dsign)
+				if line < INF and s + half_len + e.move_speed * delta > line:
+					target = minf(target, line - half_len)
+			if leader_back < INF:
+				target = minf(target, leader_back - half_len - 1.5)
+			target = maxf(target, s)
+			leader_back = target - half_len
+			var p: Vector3 = e.position + fwd * (target - s)
+			var wrapped := false
+			if horizontal and absf(p.x) > half_extent - 2.0 and signf(p.x) == dsign:
+				p.x -= dsign * (half_extent * 2.0 - 4.0)
+				wrapped = true
+			elif not horizontal and absf(p.z) > half_extent - 2.0 and signf(p.z) == dsign:
+				p.z -= dsign * (half_extent * 2.0 - 4.0)
+				wrapped = true
+			e.position = p
+			if wrapped:
+				e.reset_physics_interpolation()
+				leader_back = INF
+
+
+# --- Powerups --------------------------------------------------------------
+
+func _spawn_powerup() -> void:
+	var blocks := GameState.city_blocks()
+	var road := -half_extent + CityGen.ROAD / 2.0 + randi_range(0, blocks) * CityGen.PITCH
+	var along := randf_range(-bound, bound) * 0.9
+	var p := Powerup.new()
+	world.add_child(p)
+	p.position = Vector3(along, 1.6, road) if randf() < 0.5 else Vector3(road, 1.6, along)
+	powerups.append(p)
+
+
+func _powerup_step(delta: float) -> void:
+	for i in range(_powerup_timers.size() - 1, -1, -1):
+		_powerup_timers[i] -= delta
+		if _powerup_timers[i] <= 0.0:
+			_powerup_timers.remove_at(i)
+			_spawn_powerup()
+	for i in range(powerups.size() - 1, -1, -1):
+		var p := powerups[i]
+		for h in holes:
+			if not h.alive:
+				continue
+			if Vector2(h.position.x - p.position.x, h.position.z - p.position.z).length() < h.radius + 1.0:
+				h.give_magnet(Powerup.DURATION)
+				if h == player:
+					hud.notice(tr("MAGNET"), 1.5)
+					Input.vibrate_handheld(40)
+				p.queue_free()
+				powerups.remove_at(i)
+				_powerup_timers.append(POWERUP_RESPAWN)
+				break
 
 
 func _start_fall(e: Edible, h: Hole) -> void:
@@ -374,6 +537,14 @@ func _eat(e: Edible, h: Hole) -> void:
 
 
 func _rebin() -> void:
+	for e in movers.keys():
+		if not is_instance_valid(e):
+			movers.erase(e)
+			continue
+		var mc := _cell_of(e.position)
+		if mc != e.cell:
+			_grid_remove(e)
+			_grid_add(e)
 	for e in awake.keys():
 		if not is_instance_valid(e):
 			awake.erase(e)
@@ -503,9 +674,16 @@ func find_food(me: Hole, reach: float) -> Variant:
 	reach = minf(reach, 45.0)
 	var best: Variant = null
 	var best_score := 0.0
+	for p in powerups:
+		var pd := Vector2(p.position.x - me.position.x, p.position.z - me.position.z).length()
+		if pd < reach and me.magnet_time <= 0.0:
+			var ps := 80.0 / (pd + 4.0)
+			if ps > best_score:
+				best_score = ps
+				best = Vector3(p.position.x, 0, p.position.z)
 	for bucket in _cells_around(me.position, reach):
 		for e: Edible in bucket:
-			if e.falling_into != null or not HoleRules.fits(e.extent, me.radius):
+			if e.falling_into != null or not HoleRules.fits(e.fit_size, me.radius):
 				continue
 			var d := e.position.distance_to(me.position)
 			if d > reach:
@@ -557,7 +735,7 @@ func _on_player_level(level: int) -> void:
 
 func _update_hud() -> void:
 	hud.set_time(time_left)
-	hud.set_level(player.level, HoleRules.level_progress(player.points))
+	hud.set_level(player.level, HoleRules.level_progress(player.points), player.magnet_time)
 	match mode:
 		GameState.Mode.SOLO:
 			hud.set_info(tr("CITY_EATEN") % _percent())
@@ -626,6 +804,10 @@ func _finish() -> void:
 				lines.append(tr("NEW_RECORD"))
 	lines.append(tr("MAP_SEED") % GameState.map_seed)
 	hud.show_results(title, lines)
-	print("MATCH_END mode=%s points=%d eaten=%d/%d level=%d" % [key, player.points, eaten_count, total_count, player.level])
+	var all_magnets := 0
+	for h in holes:
+		all_magnets += h.magnets_taken
+	print("MATCH_END mode=%s points=%d eaten=%d/%d level=%d magnets=%d/%d movers_left=%d" % [key, player.points,
+		eaten_count, total_count, player.level, player.magnets_taken, all_magnets, movers.size()])
 	if GameState.autoplay:
 		get_tree().quit()

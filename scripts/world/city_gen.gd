@@ -146,7 +146,7 @@ static func _city_lots(rng: RandomNumberGenerator, out: Array, bx: float, bz: fl
 				BUILDING_COLORS[rng.randi() % BUILDING_COLORS.size()])
 			# Things in the gap between the building and the lot edge.
 			var gx := lot / 2.0 - 0.7
-			for n in rng.randi_range(2, 5):
+			for n in rng.randi_range(4, 8):
 				var side := rng.randi() % 4
 				var t := rng.randf_range(-gx, gx)
 				var px := cx + (t if side < 2 else (gx if side == 2 else -gx))
@@ -170,23 +170,23 @@ static func _suburb_lots(rng: RandomNumberGenerator, out: Array, bx: float, bz: 
 			var f := rng.randf_range(4.5, 5.5)
 			_add(out, "house", cx, cz, 0.0, Vector3(f, rng.randf_range(3.5, 5.5), f * rng.randf_range(0.8, 1.0)),
 				BUILDING_COLORS[rng.randi() % BUILDING_COLORS.size()])
-			for n in rng.randi_range(1, 3):
+			for n in rng.randi_range(2, 4):
 				var a := rng.randf() * TAU
 				_small(rng, out, _pick(rng, SMALL_YARD), cx + cos(a) * 3.3, cz + sin(a) * 3.3)
 
 
 static func _park(rng: RandomNumberGenerator, out: Array, bx: float, bz: float) -> void:
 	var m := SIDEWALK + 1.0
-	_scatter(rng, out, SMALL_PARK, rng.randi_range(30, 45), bx + m, bz + m, bx + BLOCK - m, bz + BLOCK - m)
+	_scatter(rng, out, SMALL_PARK, rng.randi_range(40, 60), bx + m, bz + m, bx + BLOCK - m, bz + BLOCK - m)
 
 
 static func _sidewalk(rng: RandomNumberGenerator, out: Array, bx: float, bz: float) -> void:
 	var inset := 1.4
-	var step := 2.5
+	var step := 2.2
 	var t := 1.5
 	while t < BLOCK - 1.0:
 		for side in 4:
-			if rng.randf() > 0.8:
+			if rng.randf() > 0.9:
 				continue
 			var x := 0.0
 			var z := 0.0
@@ -219,10 +219,13 @@ static func _roads(rng: RandomNumberGenerator, out: Array, blocks: int, half: fl
 				var parked: bool = absf(lane) > 4.0
 				var t := -half + rng.randf_range(2.0, 10.0)
 				while t < half - 4.0:
-					# Leave crossings free.
+					# Leave crossings free (a car is ~4-7 m long).
 					var m := fposmod(t + half, PITCH)
-					if m < ROAD + 1.0:
-						t += ROAD + 1.0 - m
+					if m < ROAD + 4.0:
+						t += ROAD + 4.0 - m
+						continue
+					if m > PITCH - 4.0:
+						t += PITCH - m + ROAD + 4.0
 						continue
 					var is_bus := not parked and rng.randf() < 0.1
 					var kind := "bus" if is_bus else "car"
@@ -230,9 +233,11 @@ static func _roads(rng: RandomNumberGenerator, out: Array, blocks: int, half: fl
 					var yaw := (PI / 2.0 if horizontal else 0.0) + (PI if lane > 0 else 0.0)
 					var x: float = t if horizontal else road_c + lane
 					var z: float = road_c + lane if horizontal else t
-					if not parked or rng.randf() < 0.65:
+					if not parked or rng.randf() < 0.85:
 						_add(out, kind, x, z, yaw, SIZES[kind], color)
+						if not parked:
+							out[-1]["m"] = true
 					t += (rng.randf_range(1.5, 3.0) if parked else rng.randf_range(4.0, 10.0)) + (7.5 if is_bus else 4.0)
 		# People crossing the road.
-		for n in rng.randi_range(3, 6):
+		for n in rng.randi_range(5, 9):
 			_small(rng, out, "person", rng.randf_range(-half, half), road_c + rng.randf_range(-1.5, 1.5))

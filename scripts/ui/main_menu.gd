@@ -13,7 +13,15 @@ func _ready() -> void:
 		for a in OS.get_cmdline_user_args():
 			if a.begins_with("--mode="):
 				m = a.trim_prefix("--mode=")
+			if a.begins_with("--seed="):
+				GameState.random_seed = false
+				GameState.map_seed = a.trim_prefix("--seed=").to_int()
 		GameState.mode = GameState.MODE_KEYS.find(m)
+		var scr: Script = load("res://scripts/game.gd")
+		if scr == null or not scr.can_instantiate():
+			push_error("game.gd does not compile")
+			get_tree().quit(1)
+			return
 		call_deferred("_start", GameState.mode)
 		return
 	_build()
@@ -132,4 +140,7 @@ func _start(m: int) -> void:
 		GameState.random_seed = _random_check.button_pressed
 		if not GameState.random_seed and _seed_edit.text.is_valid_int():
 			GameState.map_seed = _seed_edit.text.to_int()
-	get_tree().change_scene_to_file("res://scenes/game.tscn")
+	var err := get_tree().change_scene_to_file("res://scenes/game.tscn")
+	if err != OK and GameState.autoplay:
+		push_error("Game scene failed to load: %d" % err)
+		get_tree().quit(1)
