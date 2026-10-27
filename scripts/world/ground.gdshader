@@ -1,5 +1,6 @@
 shader_type spatial;
 // Ground with procedural roads and circular cut-outs for every hole.
+// All edges are anti-aliased with fwidth() so nothing shimmers at a distance.
 
 const int MAX_HOLES = 16;
 
@@ -27,26 +28,39 @@ void vertex() {
 	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 
+// 1 inside [a, b], 0 outside, smooth over one pixel.
+float band(float x, float a, float b, float w) {
+	return smoothstep(a - w, a + w, x) * (1.0 - smoothstep(b - w, b + w, x));
+}
+
 vec3 city_color(vec2 p) {
-	if (abs(p.x) > half_extent || abs(p.y) > half_extent) {
-		return outside_color;
-	}
+	vec2 w = max(fwidth(p), vec2(0.001));
 	// Layout along each axis: road, block, road, block, ..., road.
 	vec2 m = mod(p + vec2(half_extent), pitch);
-	bool road_x = m.x < road;
-	bool road_z = m.y < road;
-	if (road_x || road_z) {
-		vec3 c = road_color;
-		// Dashed centre line (not inside crossings).
-		if (road_x && !road_z && abs(m.x - road * 0.5) < 0.12 && mod(p.y, 4.0) < 2.0) c = line_color;
-		if (road_z && !road_x && abs(m.y - road * 0.5) < 0.12 && mod(p.x, 4.0) < 2.0) c = line_color;
-		return c;
-	}
+	// Distance-to-edge masks (1 = road on that axis).
+	float rx = 1.0 - band(m.x, road, pitch, w.x);
+	float rz = 1.0 - band(m.y, road, pitch, w.y);
+	float is_road = max(rx, rz);
+
 	vec2 b = m - vec2(road);
-	if (b.x < sidewalk || b.y < sidewalk || b.x > block_size - sidewalk || b.y > block_size - sidewalk) {
-		return walk_color;
-	}
-	return grass_color;
+	float inner_x = band(b.x, sidewalk, block_size - sidewalk, w.x);
+	float inner_z = band(b.y, sidewalk, block_size - sidewalk, w.y);
+	vec3 block_col = mix(walk_color, grass_color, inner_x * inner_z);
+
+	// Dashed centre lines, faded out where they would be thinner than a pixel.
+	float lw = 0.12;
+	float lx = band(m.x, road * 0.5 - lw, road * 0.5 + lw, w.x) * (1.0 - rz);
+	float lz = band(m.y, road * 0.5 - lw, road * 0.5 + lw, w.y) * (1.0 - rx);
+	float dash_x = band(mod(p.y, 4.0), 0.0, 2.0, w.y);
+	float dash_z = band(mod(p.x, 4.0), 0.0, 2.0, w.x);
+	float fade = 1.0 - smoothstep(0.08, 0.25, max(w.x, w.y));
+	float line = max(lx * dash_x, lz * dash_z) * fade;
+	vec3 road_col = mix(road_color, line_color, line);
+
+	vec3 col = mix(block_col, road_col, is_road);
+	float outside = max(smoothstep(half_extent - w.x, half_extent + w.x, abs(p.x)),
+		smoothstep(half_extent - w.y, half_extent + w.y, abs(p.y)));
+	return mix(col, outside_color, outside);
 }
 
 void fragment() {
@@ -57,13 +71,18 @@ void fragment() {
 		vec4 h = holes[i];
 		float d = distance(p, h.xy);
 		if (d < h.z) discard;
+		float aa = max(fwidth(d), 0.001);
 		float rim = 0.06 + h.z * 0.06;
-		if (d < h.z + rim) col = hole_colors[i].rgb;
+		float t = 1.0 - smoothstep(h.z + rim - aa, h.z + rim + aa, d);
+		col = mix(col, hole_colors[i].rgb, t);
 	}
 	if (zone.z > 0.0) {
 		float zd = distance(p, zone.xy);
-		if (zd > zone.z) col = mix(col, vec3(0.85, 0.15, 0.2), 0.45);
-		else if (zd > zone.z - 0.6) col = vec3(1.0, 0.3, 0.3);
+		float aa = max(fwidth(zd), 0.001);
+		float outside = smoothstep(zone.z - aa, zone.z + aa, zd);
+		float edge = band(zd, zone.z - 0.6, zone.z, aa);
+		col = mix(col, vec3(0.85, 0.15, 0.2), 0.45 * outside);
+		col = mix(col, vec3(1.0, 0.3, 0.3), edge);
 	}
 	ALBEDO = col;
 	ROUGHNESS = 0.95;

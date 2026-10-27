@@ -47,5 +47,6 @@ static func can_eat_hole(big_r: float, small_r: float, dist: float) -> bool:
 	return big_r > small_r * EAT_HOLE_RATIO and dist < big_r - small_r * 0.3
 
 
+## Sub-linear in volume: small things matter, skyscrapers do not dominate.
 static func points_for_size(size: Vector3) -> int:
-	return maxi(1, int(ceil(size.x * size.y * size.z)))
+	return maxi(1, int(ceil(2.0 * pow(size.x * size.y * size.z, 0.7))))

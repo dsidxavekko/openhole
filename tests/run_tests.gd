@@ -45,7 +45,7 @@ func _init() -> void:
 	var b := CityGen.generate(42, 5, 0)
 	var c := CityGen.generate(43, 5, 0)
 	var s := CityGen.generate(42, 5, 1)
-	_check(a.size() > 300, "city has many objects (%d)" % a.size())
+	_check(a.size() > 1500, "city is dense (%d objects)" % a.size())
 	_check(_hash(a) == _hash(b), "same seed gives same city")
 	_check(_hash(a) != _hash(c), "different seed gives different city")
 	_check(_hash(a) != _hash(s), "suburb theme differs from city")

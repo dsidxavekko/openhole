@@ -9,6 +9,7 @@ const CELL := 8.0
 const MAX_HOLES := 16
 const RESPAWN_TIME := 3.0
 const ZONE_OUT_LIMIT := 4.0
+const CAM_PITCH := 65.0
 const GROUND_SHADER := preload("res://scripts/world/ground.gdshader")
 
 const HOLE_COLORS := [Color("4cc9f0"), Color("f72585"), Color("ffd60a"), Color("80ed99"),
@@ -21,6 +22,7 @@ var holes: Array[Hole] = []
 var player: Hole
 var hud: Hud
 var camera: Camera3D
+var sun: DirectionalLight3D
 var ground_mat: ShaderMaterial
 var world: Node3D
 
@@ -61,6 +63,18 @@ func _ready() -> void:
 		zone_radius = zone_start
 	running = true
 	_update_hud()
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--screenshot="):
+			_take_screenshot(arg.trim_prefix("--screenshot="))
+
+
+## Dev helper: "-- --autoplay --screenshot=/path/shot.png" saves a frame after 8 s.
+func _take_screenshot(path: String) -> void:
+	await get_tree().create_timer(8.0).timeout
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png(path)
+	print("SCREENSHOT ", path)
+	get_tree().quit()
 
 
 func _notification(what: int) -> void:
@@ -80,24 +94,28 @@ func _build_environment() -> void:
 	env.background_color = Color("9ad1f5")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.75, 0.78, 0.85)
-	env.ambient_light_energy = 0.6
+	env.ambient_light_energy = 0.45
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
 
-	var sun := DirectionalLight3D.new()
+	sun = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-55, -35, 0)
-	sun.light_energy = 1.1
+	sun.light_energy = 0.95
 	sun.shadow_enabled = true
+	sun.shadow_normal_bias = 1.5
+	sun.shadow_blur = 1.5
 	sun.directional_shadow_max_distance = 90.0
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	add_child(sun)
 
 	camera = Camera3D.new()
 	camera.fov = 50.0
-	camera.far = 400.0
-	camera.rotation_degrees = Vector3(-55, 0, 0)
+	camera.far = 600.0
+	camera.rotation_degrees = Vector3(-CAM_PITCH, 0, 0)
+	# Camera follows the interpolated hole itself, so it must not be interpolated again.
+	camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	add_child(camera)
 
 	world = Node3D.new()
@@ -251,10 +269,15 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	if player == null:
 		return
-	var d := 13.0 + player.radius * 4.2
-	var pitch := deg_to_rad(55.0)
-	var target := player.position + Vector3(0, sin(pitch) * d, cos(pitch) * d)
-	camera.position = camera.position.lerp(target, clampf(delta * 5.0, 0.0, 1.0)) if camera.position != Vector3.ZERO else target
+	var d := 24.0 + player.radius * 5.5
+	var pitch := deg_to_rad(CAM_PITCH)
+	var focus := player.get_global_transform_interpolated().origin
+	var target := focus + Vector3(0, sin(pitch) * d, cos(pitch) * d)
+	if camera.position == Vector3.ZERO:
+		camera.position = target
+	else:
+		camera.position = camera.position.lerp(target, clampf(delta * 6.0, 0.0, 1.0))
+	sun.directional_shadow_max_distance = d * 1.6
 	_hud_timer -= delta
 	if _hud_timer <= 0.0 and running:
 		_hud_timer = 0.2
@@ -409,6 +432,7 @@ func _respawn(h: Hole) -> void:
 			h.position = p
 			break
 	h.snap_radius()
+	h.reset_physics_interpolation()
 	h.set_alive(true)
 
 

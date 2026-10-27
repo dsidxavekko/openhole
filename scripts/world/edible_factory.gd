@@ -1,18 +1,19 @@
 class_name EdibleFactory
 extends RefCounted
-## Builds Edible bodies from CityGen specs. Meshes and materials are shared
-## (unit meshes scaled per object) to keep memory and draw state low.
+## Builds Edible bodies from CityGen specs. Uses Kenney models when the kind has
+## one (see ModelLibrary), otherwise simple shared primitives. Collider size,
+## extent and points come from the real (scaled) model size.
 
 const GROUND_LAYER := 1
 const EDIBLE_LAYER := 2
+const SMALL_VIS_RANGE := 70.0
 
+var library := ModelLibrary.new()
 var _materials := {}
 var _shapes := {}
 var _box := BoxMesh.new()
 var _cyl := CylinderMesh.new()
 var _sphere := SphereMesh.new()
-var _capsule := CapsuleMesh.new()
-var _prism := PrismMesh.new()
 
 
 func _init() -> void:
@@ -26,11 +27,6 @@ func _init() -> void:
 	_sphere.height = 1.0
 	_sphere.radial_segments = 12
 	_sphere.rings = 6
-	_capsule.radius = 0.5
-	_capsule.height = 2.0
-	_capsule.radial_segments = 10
-	_capsule.rings = 3
-	_prism.size = Vector3.ONE
 
 
 func material(color: Color) -> StandardMaterial3D:
@@ -52,71 +48,122 @@ func _box_shape(size: Vector3) -> BoxShape3D:
 	return _shapes[key]
 
 
-func _part(body: Node3D, mesh: Mesh, scale: Vector3, offset: Vector3, color: Color) -> MeshInstance3D:
+func _part(body: Node3D, mesh: Mesh, scale: Vector3, offset: Vector3, color: Color) -> void:
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
 	mi.scale = scale
 	mi.position = offset
 	mi.material_override = material(color)
 	body.add_child(mi)
-	return mi
 
 
 func build(spec: Dictionary) -> Edible:
 	var kind: String = spec.k
 	var s: Vector3 = spec.s
-	var c: Color = spec.c
 	var e := Edible.new()
 	e.kind = kind
-	e.extent = maxf(s.x, s.z)
-	e.height = s.y
-	e.points = HoleRules.points_for_size(s)
-	e.mass = clampf(s.x * s.y * s.z * 25.0, 1.0, 4000.0)
+
+	var model_kind := kind
+	if kind == "building" and s.y > 26.0:
+		model_kind = "skyscraper"
+	var size := s
+	if library.has_kind(model_kind):
+		size = _add_model(e, model_kind, kind, s, spec.p)
+	else:
+		_add_primitive(e, kind, s, spec.c)
+
+	e.extent = maxf(size.x, size.z)
+	e.height = size.y
+	e.points = HoleRules.points_for_size(size)
+	e.mass = clampf(size.x * size.y * size.z * 25.0, 1.0, 4000.0)
 	e.collision_layer = EDIBLE_LAYER
 	e.collision_mask = GROUND_LAYER | EDIBLE_LAYER
 	e.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
 	e.freeze = true
-	e.position = spec.p + Vector3(0, s.y / 2.0, 0)
+	e.position = spec.p + Vector3(0, size.y / 2.0, 0)
 	e.rotation.y = spec.r
-
 	var col := CollisionShape3D.new()
-	col.shape = _box_shape(s)
+	col.shape = _box_shape(size)
 	e.add_child(col)
 
-	var vis_end := 0.0
-	match kind:
-		"person":
-			_part(e, _capsule, Vector3(0.38, 0.33, 0.38), Vector3(0, -0.15, 0), c)
-			_part(e, _sphere, Vector3.ONE * 0.36, Vector3(0, 0.62, 0), Color("f1c27d"))
-			vis_end = 90.0
-		"car":
-			_part(e, _box, Vector3(s.x, s.y * 0.55, s.z), Vector3(0, -s.y * 0.2, 0), c)
-			_part(e, _box, Vector3(s.x * 0.85, s.y * 0.45, s.z * 0.5), Vector3(0, s.y * 0.28, -s.z * 0.05), c.darkened(0.25))
-		"bus":
-			_part(e, _box, s, Vector3.ZERO, c)
-			_part(e, _box, Vector3(s.x * 1.02, s.y * 0.25, s.z * 0.9), Vector3(0, s.y * 0.18, 0), Color("1d3557"))
-		"building":
-			_part(e, _box, s, Vector3.ZERO, c)
-			_part(e, _box, Vector3(s.x * 1.04, 0.6, s.z * 1.04), Vector3(0, s.y / 2.0, 0), c.darkened(0.3))
-		"house":
-			_part(e, _box, Vector3(s.x, s.y * 0.65, s.z), Vector3(0, -s.y * 0.175, 0), c)
-			_part(e, _prism, Vector3(s.x * 1.1, s.y * 0.35, s.z * 1.05), Vector3(0, s.y * 0.325, 0), Color("9d0208"))
-		"tree":
-			_part(e, _cyl, Vector3(0.35, s.y * 0.45, 0.35), Vector3(0, -s.y * 0.275, 0), Color("6f4518"))
-			_part(e, _sphere, Vector3(s.x, s.y * 0.6, s.x), Vector3(0, s.y * 0.2, 0), c)
-		"bush":
-			_part(e, _sphere, s, Vector3.ZERO, c)
-			vis_end = 90.0
-		"lamp":
-			_part(e, _cyl, s, Vector3.ZERO, c)
-			_part(e, _sphere, Vector3.ONE * 0.5, Vector3(0, s.y / 2.0, 0), Color("fff3b0"))
-		"hydrant", "trash", "cone":
-			_part(e, _cyl, s, Vector3.ZERO, c)
-			vis_end = 80.0
-		_:
-			_part(e, _box, s, Vector3.ZERO, c)
-	if vis_end > 0.0:
-		for child in e.get_children():
-			if child is MeshInstance3D:
-				child.visibility_range_end = vis_end
+	if e.extent < 1.0 and size.y < 2.5:
+		_make_cheap(e)
 	return e
+
+
+## Adds the model under `e`, centred on the body origin. Returns the real size.
+func _add_model(e: Edible, model_kind: String, kind: String, s: Vector3, p: Vector3) -> Vector3:
+	var info := library.pick(model_kind, p)
+	var a: AABB = info.aabb
+	var rot90 := false
+	var sc := Vector3.ONE
+	if kind in ModelLibrary.FIT_HEIGHT:
+		sc = Vector3.ONE * (s.y / a.size.y)
+	else:
+		# Line up the longest horizontal sides of the model and the spec.
+		if absf(s.x - s.z) > 0.3 and (a.size.x > a.size.z) != (s.x > s.z):
+			rot90 = true
+		var ax := a.size.z if rot90 else a.size.x
+		var az := a.size.x if rot90 else a.size.z
+		var k := minf(s.x / ax, s.z / az)
+		sc = Vector3(k, k, k)
+		if kind == "building":
+			sc.y = k * clampf(s.y / (a.size.y * k), 0.75, 1.6)
+
+	var holder := Node3D.new()
+	holder.rotation.y = PI / 2.0 if rot90 else 0.0
+	holder.scale = sc
+	e.add_child(holder)
+	var inst: Node3D = info.scene.instantiate()
+	inst.position = -a.get_center()
+	holder.add_child(inst)
+	if kind == "person":
+		_pose_idle(inst)
+
+	var size := Vector3(a.size.x * sc.x, a.size.y * sc.y, a.size.z * sc.z)
+	if rot90:
+		size = Vector3(size.z, size.y, size.x)
+	if kind == "person":
+		# The bind pose has arms out; the collider should match the idle body.
+		size.x = 0.55
+		size.z = 0.55
+	return size
+
+
+## Characters come with 30+ animations: freeze them in the idle pose and drop the player.
+func _pose_idle(n: Node) -> void:
+	var ap := n.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if ap == null:
+		return
+	if ap.has_animation("idle"):
+		ap.play("idle")
+		ap.seek(0.0, true)
+		ap.advance(0.0)
+	ap.stop(true)
+	ap.get_parent().remove_child(ap)
+	ap.free()
+
+
+func _make_cheap(n: Node) -> void:
+	for c in n.get_children():
+		if c is GeometryInstance3D:
+			c.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			c.visibility_range_end = SMALL_VIS_RANGE
+		_make_cheap(c)
+
+
+func _add_primitive(e: Edible, kind: String, s: Vector3, c: Color) -> void:
+	match kind:
+		"mailbox":
+			_part(e, _cyl, Vector3(0.12, s.y * 0.7, 0.12), Vector3(0, -s.y * 0.15, 0), Color("495057"))
+			_part(e, _box, Vector3(s.x, s.y * 0.3, s.z), Vector3(0, s.y * 0.35, 0), c)
+		"bike":
+			_part(e, _cyl, Vector3(s.y * 0.6, 0.06, s.y * 0.6), Vector3(0, -s.y * 0.2, s.z * 0.3), Color("222222"))
+			_part(e, _cyl, Vector3(s.y * 0.6, 0.06, s.y * 0.6), Vector3(0, -s.y * 0.2, -s.z * 0.3), Color("222222"))
+			_part(e, _box, Vector3(0.08, 0.08, s.z * 0.7), Vector3(0, s.y * 0.1, 0), c)
+			for w in e.get_children():
+				if w is MeshInstance3D and w.scale.y < 0.1:
+					w.rotation.z = PI / 2.0
+		_:
+			# hydrant, trash and anything else round.
+			_part(e, _cyl, s, Vector3.ZERO, c)
