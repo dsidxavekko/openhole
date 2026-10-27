@@ -1,0 +1,35 @@
+keys,en,uk
+SUBTITLE,Swallow the whole city,Проковтни все місто
+MODE_CLASSIC,Classic,Класика
+MODE_SOLO,Solo,Соло
+MODE_BATTLE,Battle,Битва
+DESC_CLASSIC,2 minutes against 7 bots. Biggest hole wins.,2 хвилини проти 7 ботів. Перемагає найбільша діра.
+DESC_SOLO,Alone in the city: eat as much as you can in 2 minutes.,Сам у місті: з'їж якнайбільше за 2 хвилини.
+DESC_BATTLE,Last hole standing. Stay inside the zone!,Виживає остання діра. Тримайся в зоні!
+MAP,Map: %s,Мапа: %s
+THEME_CITY,City,Місто
+THEME_SUBURB,Suburb,Передмістя
+RANDOM_MAP,Random map,Випадкова мапа
+SEED,Seed: ,Seed:
+LANGUAGE,Language: English,Мова: Українська
+RECORDS,Records,Рекорди
+RECORD_CLASSIC,Classic: %d pts,Класика: %d очок
+RECORD_SOLO,Solo: %.1f%% of the city,Соло: %.1f%% міста
+RECORD_BATTLE,Battle: %d wins / best %d pts,Битва: %d перемог / найкраще %d очок
+YOU,You,Ти
+LEVEL,Level %d,Рівень %d
+LEVEL_UP,Level %d!,Рівень %d!
+ALIVE,Alive: %d,Живих: %d
+CITY_EATEN,City eaten: %.1f%%,З'їдено міста: %.1f%%
+ATE_HOLE,You ate %s!,Ти з'їв %s!
+EATEN_RESPAWN,You were eaten! Respawning...,Тебе з'їли! Відродження...
+ELIMINATED,You were eliminated,Тебе вибито
+ZONE_WARNING,Get back into the zone!,Повертайся в зону!
+TIME_UP,Time's up!,Час вийшов!
+YOU_WIN,You win!,Перемога!
+PLACE,Place #%d,Місце #%d
+POINTS,Points: %d,Очки: %d
+NEW_RECORD,New record!,Новий рекорд!
+MAP_SEED,Map seed: %d,Seed мапи: %d
+PLAY_AGAIN,Play again,Ще раз
+MENU,Menu,Меню

@@ -1,0 +1,55 @@
+; Engine configuration file.
+config_version=5
+
+[application]
+
+config/name="Holedio"
+config/description="Open source hole-eating city game"
+config/version="0.1.0"
+config/icon="res://icon.svg"
+run/main_scene="res://scenes/main_menu.tscn"
+config/features=PackedStringArray("4.7", "Mobile")
+config/quit_on_go_back=false
+
+[autoload]
+
+Save="*res://scripts/autoload/save.gd"
+GameState="*res://scripts/autoload/game_state.gd"
+
+[display]
+
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/size/window_width_override=405
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=1
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
+
+[internationalization]
+
+locale/translations=PackedStringArray("res://i18n/strings.en.translation", "res://i18n/strings.uk.translation")
+locale/fallback="en"
+
+[layer_names]
+
+3d_physics/layer_1="ground"
+3d_physics/layer_2="edible"
+3d_physics/layer_3="well"
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+common/physics_ticks_per_second=60
+
+[rendering]
+
+renderer/rendering_method="mobile"
+renderer/rendering_method.mobile="mobile"
+textures/vram_compression/import_etc2_astc=true
+lights_and_shadows/directional_shadow/size=2048
+anti_aliasing/quality/msaa_3d=1
