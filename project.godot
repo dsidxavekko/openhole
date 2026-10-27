@@ -47,6 +47,7 @@ locale/fallback="en"
 3d/physics_engine="Jolt Physics"
 common/physics_ticks_per_second=60
 common/physics_interpolation=true
+jolt_physics_3d/simulation/baumgarte_stabilization_factor=0.1
 
 [rendering]
 

@@ -1,6 +1,7 @@
 class_name FloatingJoystick
 extends Control
-## Touch anywhere and drag. The base follows the finger when dragged too far.
+## Touch anywhere and drag. The base stays where the finger first touched;
+## the knob is clamped to the base circle.
 ## Mouse works too via "emulate touch from mouse".
 
 var vector := Vector2.ZERO
@@ -38,11 +39,8 @@ func _input(event: InputEvent) -> void:
 		elif not event.pressed and event.index == _touch:
 			release()
 	elif event is InputEventScreenDrag and event.index == _touch:
-		_pos = event.position
-		var d := _pos - _origin
-		if d.length() > max_dist:
-			_origin = _pos - d.normalized() * max_dist
-			d = _pos - _origin
+		var d: Vector2 = (event.position - _origin).limit_length(max_dist)
+		_pos = _origin + d
 		vector = d / max_dist
 		if vector.length() < 0.12:
 			vector = Vector2.ZERO
