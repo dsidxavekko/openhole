@@ -25,6 +25,9 @@ var out_of_zone := 0.0
 var magnet_time := 0.0
 var magnets_taken := 0
 var controller: RefCounted = null
+## Own physics layer bit: falling objects only collide with the well they fall into,
+## never with the lip of a neighbouring hole.
+var well_layer := WELL_LAYER
 
 var _well_body: AnimatableBody3D
 var _segments: Array[CollisionShape3D] = []
@@ -44,7 +47,7 @@ func setup(p_name: String, p_color: Color, p_player: bool) -> void:
 func _ready() -> void:
 	_well_body = AnimatableBody3D.new()
 	_well_body.sync_to_physics = true
-	_well_body.collision_layer = WELL_LAYER
+	_well_body.collision_layer = well_layer
 	_well_body.collision_mask = 0
 	add_child(_well_body)
 	for i in SEGMENTS:
@@ -139,8 +142,12 @@ func step(delta: float, bound: float) -> void:
 
 
 ## Weak permanent pull, much stronger while a magnet bonus is active.
+## The reach beyond the rim is capped: a level-16 hole would otherwise scan
+## half the map every tick.
 func magnet_radius() -> float:
-	return radius * 2.5 + 8.0 if magnet_time > 0.0 else radius * 1.6 + 1.5
+	if magnet_time > 0.0:
+		return radius + minf(radius * 1.5 + 8.0, 20.0)
+	return radius + minf(radius * 0.6 + 1.5, 8.0)
 
 
 func magnet_strength() -> float:
@@ -167,7 +174,7 @@ func set_alive(value: bool) -> void:
 	if not value:
 		magnet_time = 0.0
 		_ring.visible = false
-	_well_body.collision_layer = WELL_LAYER if value else 0
+	_well_body.collision_layer = well_layer if value else 0
 
 
 func _apply_radius() -> void:

@@ -59,6 +59,15 @@ func _init() -> void:
 		if absf(sp.p.x) > half or absf(sp.p.z) > half:
 			inside = false
 	_check(inside, "everything is inside the map")
+	var in_crossing := 0
+	for sp in a + s:
+		if sp.k != "person":
+			continue
+		var mx := fposmod(sp.p.x + half, CityGen.PITCH)
+		var mz := fposmod(sp.p.z + half, CityGen.PITCH)
+		if mx < CityGen.ROAD and mz < CityGen.ROAD:
+			in_crossing += 1
+	_check(in_crossing == 0, "nobody stands inside a crossing (%d)" % in_crossing)
 
 	print("FAILED: %d" % _fails if _fails else "ALL PASSED")
 	quit(1 if _fails else 0)

@@ -195,6 +195,7 @@ func _spawn_holes() -> void:
 		var h := Hole.new()
 		var is_player := i == 0
 		h.setup(tr("YOU") if is_player else names[i % names.size()], HOLE_COLORS[i % HOLE_COLORS.size()], is_player)
+		h.well_layer = WELL_LAYER << i
 		add_child(h)
 		h.position = _spawn_point(i, count)
 		if is_player:
@@ -355,15 +356,15 @@ func _swallow_step() -> void:
 		var ms := h.magnet_strength()
 		for bucket in _cells_around(hp, maxf(r + 11.0, mr + 2.0)):
 			for e: Edible in bucket:
-				if e.falling_into != null:
+				# Things that do not fit stay static: the hole slides under them.
+				if e.falling_into != null or not HoleRules.fits(e.fit_size, r):
 					continue
 				var dx := e.position.x - hp.x
 				var dz := e.position.z - hp.z
 				var d := sqrt(dx * dx + dz * dz)
 				var touching := d <= r + e.extent * 0.5 + 0.3
 				var pulled := e.magnetic and d < mr
-				# Things that do not fit stay static: the hole slides under them.
-				if not (touching or pulled) or not HoleRules.fits(e.fit_size, r):
+				if not (touching or pulled):
 					continue
 				_wake(e)
 				if d < r + e.extent * 0.3:
@@ -410,17 +411,21 @@ func _add_mover(e: Edible) -> void:
 
 ## Leader first (largest coordinate along the driving direction); slot 0 is the speed.
 func _sort_lanes() -> void:
-	for key in lanes:
-		var list: Array = lanes[key]
-		var speed: float = list[0]
-		var cars: Array = []
-		for i in range(1, list.size()):
-			var e = list[i]
-			if is_instance_valid(e) and e.moving:
-				cars.append(e)
-		cars.sort_custom(func(a: Edible, b: Edible):
-			return a.position.dot(a.transform.basis.z) > b.position.dot(b.transform.basis.z))
-		lanes[key] = [speed] + cars
+	for key in lanes.keys():
+		_sort_lane(key)
+
+
+func _sort_lane(key: String) -> void:
+	var list: Array = lanes[key]
+	var speed: float = list[0]
+	var cars: Array = []
+	for i in range(1, list.size()):
+		var e = list[i]
+		if is_instance_valid(e) and e.moving:
+			cars.append(e)
+	cars.sort_custom(func(a: Edible, b: Edible):
+		return a.position.dot(a.transform.basis.z) > b.position.dot(b.transform.basis.z))
+	lanes[key] = [speed] + cars
 
 
 func _green(horizontal: bool) -> bool:
@@ -443,6 +448,9 @@ func _stop_line(front: float, dsign: float) -> float:
 
 func _traffic_step(delta: float) -> void:
 	_traffic_time += delta
+	# A car that wrapped around is now the last one in its lane: re-sort right away,
+	# otherwise it keeps the leader slot and drives through the car in front of it.
+	var wrapped_lanes: Array[String] = []
 	for key in lanes:
 		var list: Array = lanes[key]
 		var horizontal: bool = (key as String).begins_with("h")
@@ -477,6 +485,10 @@ func _traffic_step(delta: float) -> void:
 			if wrapped:
 				e.reset_physics_interpolation()
 				leader_back = INF
+				if not wrapped_lanes.has(key):
+					wrapped_lanes.append(key)
+	for key in wrapped_lanes:
+		_sort_lane(key)
 
 
 # --- Powerups --------------------------------------------------------------
@@ -515,7 +527,7 @@ func _powerup_step(delta: float) -> void:
 
 func _start_fall(e: Edible, h: Hole) -> void:
 	e.falling_into = h
-	e.collision_mask = EDIBLE_LAYER | WELL_LAYER
+	e.collision_mask = EDIBLE_LAYER | h.well_layer
 	e.gravity_scale = 1.6
 	e.sleeping = false
 	# Tip it over towards the middle of the hole: things narrower than the hole

@@ -238,6 +238,11 @@ static func _roads(rng: RandomNumberGenerator, out: Array, blocks: int, half: fl
 						if not parked:
 							out[-1]["m"] = true
 					t += (rng.randf_range(1.5, 3.0) if parked else rng.randf_range(4.0, 10.0)) + (7.5 if is_bus else 4.0)
-		# People crossing the road.
+		# People crossing the road, never inside a crossing: cross traffic drives there.
 		for n in rng.randi_range(5, 9):
-			_small(rng, out, "person", rng.randf_range(-half, half), road_c + rng.randf_range(-1.5, 1.5))
+			var px := rng.randf_range(-half, half)
+			if fposmod(px + half, PITCH) < ROAD + 1.0:
+				px += ROAD + 2.0
+			if px > half - 1.0:
+				continue
+			_small(rng, out, "person", px, road_c + rng.randf_range(-1.5, 1.5))
