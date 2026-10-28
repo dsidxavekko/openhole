@@ -32,6 +32,6 @@ func submit_record(key: String, value: float) -> bool:
 	return true
 
 
-func add_counter(key: String) -> void:
-	cfg.set_value("records", key, get_record(key) + 1)
+func add_counter(key: String, amount := 1) -> void:
+	cfg.set_value("records", key, get_record(key) + amount)
 	cfg.save(PATH)

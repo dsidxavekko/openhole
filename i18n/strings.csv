@@ -3,14 +3,13 @@ SUBTITLE,Swallow the whole city,Проковтни все місто
 MODE_CLASSIC,Classic,Класика
 MODE_SOLO,Solo,Соло
 MODE_BATTLE,Battle,Битва
-DESC_CLASSIC,2 minutes against 7 bots. Biggest hole wins.,2 хвилини проти 7 ботів. Перемагає найбільша діра.
+DESC_CLASSIC,2 minutes vs %d bots. Biggest hole wins.,"2 хвилини, ботів: %d. Перемагає найбільша діра."
 DESC_SOLO,Alone in the city: eat as much as you can in 2 minutes.,Сам у місті: з'їж якнайбільше за 2 хвилини.
 DESC_BATTLE,Last hole standing. Stay inside the zone!,Виживає остання діра. Тримайся в зоні!
-MAP,Map: %s,Мапа: %s
 THEME_CITY,City,Місто
 THEME_SUBURB,Suburb,Передмістя
 RANDOM_MAP,Random map,Випадкова мапа
-SEED,Seed: ,Seed:
+SEED,Seed,Seed
 LANGUAGE,Language: English,Мова: Українська
 RECORDS,Records,Рекорди
 RECORD_CLASSIC,Classic: %d pts,Класика: %d очок
@@ -33,5 +32,47 @@ NEW_RECORD,New record!,Новий рекорд!
 MAP_SEED,Map seed: %d,Seed мапи: %d
 PLAY_AGAIN,Play again,Ще раз
 MENU,Menu,Меню
-MAGNET,Magnet!,Магніт!
-MAGNET_LEFT,Magnet: %ds,Магніт: %d с
+PU_MAGNET,Magnet,Магніт
+PU_SPEED,Speed,Швидкість
+PU_GROW,Giant,Велетень
+PU_SHIELD,Shield,Щит
+COMBO,Combo %d · ×%.2f,Комбо %d · ×%.2f
+SETTINGS,Settings,Налаштування
+SOUND,Sound,Звук
+VIBRATION,Vibration,Вібрація
+CAMERA_SHAKE,Camera shake,Трясіння камери
+SHOW_FPS,Show FPS,Показувати FPS
+DIFFICULTY,Bots,Боти
+DIFF_EASY,Easy,Легкі
+DIFF_NORMAL,Normal,Звичайні
+DIFF_HARD,Hard,Сильні
+BOTS,Bot count,Кількість ботів
+MAP_THEME,Map,Мапа
+PAUSE,Pause,Пауза
+CONTINUE,Continue,Продовжити
+BACK,Back,Назад
+CLOSE,Close,Закрити
+DAILY,Daily challenge,Щоденний виклик
+DESC_DAILY,One city for everyone today,Одне місто для всіх на сьогодні
+DAILY_DONE,Daily challenge done!,Щоденний виклик пройдено!
+EATEN_COUNT,Things eaten: %d,З'їдено предметів: %d
+NEW_SKIN,New skin: %s!,Новий скін: %s!
+SKINS,Skins,Скіни
+SELECTED,Selected,Обрано
+BEST,Best: %s,Рекорд: %s
+BEST_TODAY,Today: %s,Сьогодні: %s
+WINS,Wins: %d,Перемог: %d
+NEED_CLASSIC,Classic: %d points,Класика: %d очок
+NEED_SOLO,Solo: %d%% of the city,Соло: %d%% міста
+NEED_BATTLE_WINS,Battle wins: %d,Перемог у Битві: %d
+NEED_EATEN,Eat %d things in total,З'їж загалом %d предметів
+SKIN_SKY,Sky,Небо
+SKIN_ROSE,Rose,Троянда
+SKIN_LIME,Lime,Лайм
+SKIN_SUN,Sun,Сонце
+SKIN_NEON,Neon,Неон
+SKIN_TIGER,Tiger,Тигр
+SKIN_ICE,Ice,Лід
+SKIN_RUBY,Ruby,Рубін
+SKIN_GOLD,Gold,Золото
+SKIN_RAINBOW,Rainbow,Веселка

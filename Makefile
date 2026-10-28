@@ -16,7 +16,7 @@ import:
 	$(GODOT) --headless --import --path . 2>&1 | grep -Ei "error|warn" || true
 
 test: import
-	$(GODOT) --headless --path . -s tests/run_tests.gd
+	timeout 180 $(GODOT) --headless --path . -s tests/run_tests.gd
 
 # Runs a full bot-driven match without graphics, e.g. make smoke MODE=battle
 MODE ?= classic

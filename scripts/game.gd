@@ -1,6 +1,10 @@
 extends Node3D
 ## Match controller: builds the world, runs the swallow physics,
 ## holes vs holes, bots and the three game modes.
+## With `attract = true` it is the main menu background: a small city, one bot,
+## no HUD, no sound, a slowly orbiting camera.
+
+signal attract_finished
 
 const GROUND_LAYER := 1
 const EDIBLE_LAYER := 2
@@ -10,14 +14,17 @@ const MAX_HOLES := 16
 const RESPAWN_TIME := 3.0
 const ZONE_OUT_LIMIT := 4.0
 const CAM_PITCH := 65.0
-const POWERUP_COUNT := 5
-const POWERUP_RESPAWN := 20.0
+const POWERUP_COUNT := 6
+const POWERUP_RESPAWN := 18.0
+const ATTRACT_TIME := 90.0
+const POPUP_POOL := 12
 ## Traffic light cycle: horizontal green, all red, vertical green, all red.
 const LIGHT_CYCLE := 16.0
 const GROUND_SHADER := preload("res://scripts/world/ground.gdshader")
 
 const HOLE_COLORS := [Color("4cc9f0"), Color("f72585"), Color("ffd60a"), Color("80ed99"),
-	Color("ff8500"), Color("b388eb"), Color("ff595e"), Color("f8f9fa"), Color("06d6a0")]
+	Color("ff8500"), Color("b388eb"), Color("ff595e"), Color("f8f9fa"), Color("06d6a0"),
+	Color("3a86ff"), Color("ffafcc"), Color("a7c957"), Color("fb5607")]
 const BOT_NAMES := ["Borsch", "Varenyk", "Kozak", "Nimbus", "Pixel", "Bublyk", "Kotyk",
 	"Grim", "Mango", "Zirka", "Turbo", "Lava", "Blyskavka", "Shadow"]
 
@@ -52,34 +59,56 @@ var _traffic_time := 0.0
 var powerups: Array[Powerup] = []
 var _powerup_timers: Array[float] = []
 var _flung := {}          # diagnostics: objects thrown into the air
+var attract := false
+var _attract_time := 0.0
+var _orbit := 0.0
+var _shake := 0.0         # camera trauma 0..1
+var _popups: Array[Label3D] = []
+var _popup_next := 0
+var _last_tick := -1
+var _best_item := 0
 
 
 func _ready() -> void:
-	mode = GameState.mode
+	mode = GameState.Mode.SOLO if attract else GameState.mode
 	time_left = GameState.match_time()
 	_build_environment()
-	var blocks := GameState.city_blocks()
+	var blocks := _blocks()
 	var half := CityGen.map_extent(blocks) / 2.0
 	bound = half - 2.0
 	half_extent = half
 	_build_ground(half)
-	_spawn_city(GameState.resolve_seed(), blocks)
+	_spawn_city(randi() % 1000000 if attract else GameState.resolve_seed(), blocks)
 	_spawn_holes()
-	for i in POWERUP_COUNT:
-		_spawn_powerup()
-
-	hud = Hud.new()
-	add_child(hud)
-	hud.play_again.connect(func(): get_tree().reload_current_scene())
-	hud.to_menu.connect(_go_menu)
 	if mode == GameState.Mode.BATTLE:
 		zone_start = half * 1.45
 		zone_radius = zone_start
+	for i in (2 if attract else POWERUP_COUNT):
+		_spawn_powerup()
+	_make_popups()
 	running = true
+	if attract:
+		return
+
+	hud = Hud.new()
+	add_child(hud)
+	hud.play_again.connect(func():
+		get_tree().paused = false
+		get_tree().reload_current_scene())
+	hud.to_menu.connect(_go_menu)
+	hud.resume.connect(resume)
 	_update_hud()
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--screenshot="):
 			_take_screenshot(arg.trim_prefix("--screenshot="))
+
+
+func _blocks() -> int:
+	return 2 if attract else GameState.city_blocks()
+
+
+func _theme() -> int:
+	return GameState.map_theme if attract else GameState.match_theme()
 
 
 ## Dev helper: "-- --autoplay --screenshot=/path/shot.png" saves a frame after 8 s.
@@ -96,11 +125,35 @@ func _take_screenshot(path: String) -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
-		_go_menu()
+	if attract or hud == null:
+		return
+	match what:
+		NOTIFICATION_WM_GO_BACK_REQUEST:
+			if hud.has_results():
+				_go_menu()
+			elif hud.is_paused():
+				resume()
+			else:
+				pause()
+		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT:
+			if not GameState.autoplay:
+				pause()
+
+
+func pause() -> void:
+	if not running or hud == null or hud.is_paused():
+		return
+	get_tree().paused = true
+	hud.show_pause()
+
+
+func resume() -> void:
+	get_tree().paused = false
+	hud.hide_pause()
 
 
 func _go_menu() -> void:
+	get_tree().paused = false
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
 
@@ -162,7 +215,7 @@ func _build_ground(half: float) -> void:
 	ground_mat.set_shader_parameter("pitch", CityGen.PITCH)
 	ground_mat.set_shader_parameter("road", CityGen.ROAD)
 	ground_mat.set_shader_parameter("sidewalk", CityGen.SIDEWALK)
-	if GameState.map_theme == GameState.MapTheme.SUBURB:
+	if _theme() == GameState.MapTheme.SUBURB:
 		ground_mat.set_shader_parameter("grass_color", Color("7fb069"))
 		ground_mat.set_shader_parameter("road_color", Color("5c5f66"))
 	var mi := MeshInstance3D.new()
@@ -173,7 +226,7 @@ func _build_ground(half: float) -> void:
 
 func _spawn_city(seed_value: int, blocks: int) -> void:
 	var factory := EdibleFactory.new()
-	for spec in CityGen.generate(seed_value, blocks, GameState.map_theme):
+	for spec in CityGen.generate(seed_value, blocks, _theme()):
 		var e := factory.build(spec)
 		if _overlaps_existing(e):
 			e.free()
@@ -191,31 +244,45 @@ func _spawn_holes() -> void:
 	var count := 1 if mode == GameState.Mode.SOLO else 1 + GameState.bot_count
 	var names := BOT_NAMES.duplicate()
 	names.shuffle()
+	var skin := Skins.get_skin(GameState.skin)
+	# Bots never wear a colour close to the player's skin.
+	var colors: Array = []
+	for c: Color in HOLE_COLORS:
+		if _color_distance(c, skin.color) > 0.25:
+			colors.append(c)
+	var skill := GameState.bot_skill_range()
 	for i in count:
 		var h := Hole.new()
 		var is_player := i == 0
-		h.setup(tr("YOU") if is_player else names[i % names.size()], HOLE_COLORS[i % HOLE_COLORS.size()], is_player)
+		if is_player:
+			h.setup("" if attract else tr("YOU"), skin.color, true, skin.pattern)
+		else:
+			h.setup(names[i % names.size()], colors[(i - 1) % colors.size()], false)
 		h.well_layer = WELL_LAYER << i
 		add_child(h)
 		h.position = _spawn_point(i, count)
 		if is_player:
 			player = h
 			h.leveled_up.connect(_on_player_level)
-			if GameState.autoplay:
+			if GameState.autoplay or attract:
 				_player_bot = BotAI.new(h, self, 0.8)
 		else:
-			h.controller = BotAI.new(h, self, randf_range(0.3, 0.7))
+			h.controller = BotAI.new(h, self, randf_range(skill.x, skill.y), GameState.bot_chase_start())
 		holes.append(h)
+
+
+static func _color_distance(a: Color, b: Color) -> float:
+	return Vector3(a.r - b.r, a.g - b.g, a.b - b.b).length()
 
 
 func _spawn_point(i: int, count: int) -> Vector3:
 	if count == 1:
-		return Vector3(0, 0, CityGen.ROAD / 2.0 - CityGen.map_extent(GameState.city_blocks()) / 2.0 + CityGen.PITCH * 2)
+		return Vector3(0, 0, CityGen.ROAD / 2.0 - half_extent + CityGen.PITCH * mini(2, _blocks() - 1))
 	# Spread around a circle, snapped to the nearest road centre line.
 	var a := TAU * i / count + randf() * 0.3
 	var r := bound * 0.6
 	var p := Vector3(cos(a) * r, 0, sin(a) * r)
-	var half := CityGen.map_extent(GameState.city_blocks()) / 2.0
+	var half := half_extent
 	var road_z: float = round((p.z + half - CityGen.ROAD / 2.0) / CityGen.PITCH) * CityGen.PITCH - half + CityGen.ROAD / 2.0
 	p.z = road_z
 	return p
@@ -276,7 +343,14 @@ func _cells_around(p: Vector3, reach: float) -> Array:
 func _physics_process(delta: float) -> void:
 	if not running:
 		return
-	time_left -= delta
+	if attract:
+		_attract_time += delta
+		if _attract_time > ATTRACT_TIME:
+			running = false
+			attract_finished.emit()
+			return
+	else:
+		time_left -= delta
 	_vibrate_cooldown -= delta
 
 	if player.alive:
@@ -298,6 +372,8 @@ func _physics_process(delta: float) -> void:
 	_traffic_step(delta)
 	_powerup_step(delta)
 	_swallow_step()
+	if not attract:
+		_tick_sound()
 	_falling_step()
 	if mode != GameState.Mode.SOLO:
 		_holes_step()
@@ -317,19 +393,76 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	if player == null:
 		return
+	var focus := player.get_global_transform_interpolated().origin
+	if attract:
+		# Menu background: slow orbit around the bot, a bit further out.
+		_orbit += delta * 0.12
+		var dist := 30.0 + player.radius * 6.0
+		var off := Vector3(sin(_orbit), 0, cos(_orbit)) * cos(deg_to_rad(50.0)) * dist
+		off.y = sin(deg_to_rad(50.0)) * dist
+		var want := focus + off
+		camera.position = want if camera.position == Vector3.ZERO else camera.position.lerp(want, clampf(delta * 2.0, 0.0, 1.0))
+		camera.look_at(focus)
+		sun.directional_shadow_max_distance = dist * 1.8
+		return
 	var d := 24.0 + player.radius * 5.5
 	var pitch := deg_to_rad(CAM_PITCH)
-	var focus := player.get_global_transform_interpolated().origin
 	var target := focus + Vector3(0, sin(pitch) * d, cos(pitch) * d)
 	if camera.position == Vector3.ZERO:
 		camera.position = target
 	else:
 		camera.position = camera.position.lerp(target, clampf(delta * 6.0, 0.0, 1.0))
 	sun.directional_shadow_max_distance = d * 1.6
+	_shake = maxf(_shake - delta * 1.6, 0.0)
+	var amp := _shake * _shake * (0.6 + player.radius * 0.08) if GameState.shake else 0.0
+	camera.h_offset = randf_range(-amp, amp)
+	camera.v_offset = randf_range(-amp, amp)
+	if running:
+		_update_pointers()
 	_hud_timer -= delta
 	if _hud_timer <= 0.0 and running:
 		_hud_timer = 0.2
 		_update_hud()
+
+
+func _add_shake(amount: float) -> void:
+	_shake = minf(_shake + amount, 1.0)
+
+
+## Edge-of-screen arrows towards nearby holes outside the view:
+## red = can eat you, green = you can eat it.
+func _update_pointers() -> void:
+	if mode == GameState.Mode.SOLO or not player.alive:
+		hud.set_pointers([])
+		return
+	var rect := get_viewport().get_visible_rect()
+	var inner := rect.grow(-48.0)
+	var center := rect.get_center()
+	var found := []
+	for o in holes:
+		if o == player or not o.alive:
+			continue
+		var c := Color()
+		if o.radius > player.radius * HoleRules.EAT_HOLE_RATIO:
+			c = Color("ff4d6d")
+		elif player.radius > o.radius * HoleRules.EAT_HOLE_RATIO:
+			c = Color("80ed99")
+		else:
+			continue
+		var dist := o.position.distance_to(player.position)
+		if dist > 45.0 + player.radius * 4.0 or camera.is_position_behind(o.position):
+			continue
+		var sp := camera.unproject_position(o.position)
+		if rect.has_point(sp):
+			continue
+		var dir := (sp - center).normalized()
+		# Walk from the centre to the inner rectangle edge along dir.
+		var tx := (inner.size.x / 2.0) / maxf(absf(dir.x), 0.001)
+		var ty := (inner.size.y / 2.0) / maxf(absf(dir.y), 0.001)
+		var p := center + dir * minf(tx, ty)
+		found.append({"p": p, "a": dir.angle(), "c": c, "d": dist})
+	found.sort_custom(func(a, b): return a.d < b.d)
+	hud.set_pointers(found.slice(0, 4))
 
 
 func _player_input() -> Vector2:
@@ -437,7 +570,7 @@ func _green(horizontal: bool) -> bool:
 func _stop_line(front: float, dsign: float) -> float:
 	# Crossing centres in world coords are -half + ROAD/2 + j * PITCH; in "s" they are mirrored by dsign.
 	var best := INF
-	var blocks := GameState.city_blocks()
+	var blocks := _blocks()
 	for j in blocks + 1:
 		var c := (-half_extent + CityGen.ROAD / 2.0 + j * CityGen.PITCH) * dsign
 		var line := c - CityGen.ROAD / 2.0 - 0.3
@@ -494,12 +627,17 @@ func _traffic_step(delta: float) -> void:
 # --- Powerups --------------------------------------------------------------
 
 func _spawn_powerup() -> void:
-	var blocks := GameState.city_blocks()
-	var road := -half_extent + CityGen.ROAD / 2.0 + randi_range(0, blocks) * CityGen.PITCH
-	var along := randf_range(-bound, bound) * 0.9
+	var blocks := _blocks()
 	var p := Powerup.new()
+	p.kind = Powerup.random_kind(mode != GameState.Mode.SOLO)
 	world.add_child(p)
-	p.position = Vector3(along, 1.6, road) if randf() < 0.5 else Vector3(road, 1.6, along)
+	for attempt in 6:
+		var road := -half_extent + CityGen.ROAD / 2.0 + randi_range(0, blocks) * CityGen.PITCH
+		var along := randf_range(-bound, bound) * 0.9
+		p.position = Vector3(along, 1.6, road) if randf() < 0.5 else Vector3(road, 1.6, along)
+		# Battle: only inside the zone, otherwise nobody can get it.
+		if mode != GameState.Mode.BATTLE or Vector2(p.position.x, p.position.z).length() < zone_radius - 8.0:
+			break
 	powerups.append(p)
 
 
@@ -515,10 +653,11 @@ func _powerup_step(delta: float) -> void:
 			if not h.alive:
 				continue
 			if Vector2(h.position.x - p.position.x, h.position.z - p.position.z).length() < h.radius + 1.0:
-				h.give_magnet(Powerup.DURATION)
-				if h == player:
-					hud.notice(tr("MAGNET"), 1.5)
-					Input.vibrate_handheld(40)
+				h.give_effect(p.kind, Powerup.DURATIONS[p.kind])
+				if _me(h):
+					hud.notice(tr(Powerup.NAMES[p.kind]) + "!", 1.5)
+					GameState.vibrate(40)
+					Sfx.play("powerup")
 				p.queue_free()
 				powerups.remove_at(i)
 				_powerup_timers.append(POWERUP_RESPAWN)
@@ -556,10 +695,19 @@ func _falling_step() -> void:
 			_eat(e, h)
 			continue
 		var bottom := e.position.y - e.height * 0.5
+		# Walls of a fast (Speed) or growing hole can kick things upwards: never fly.
+		if e.linear_velocity.y > 2.0:
+			e.linear_velocity.y = 2.0
 		var d := INF
 		if h.alive:
 			d = Vector2(e.position.x - h.position.x, e.position.z - h.position.z).length()
 		var off_hole := d > h.radius + e.extent * 0.5 + 0.3
+		if h.alive and h.radius > h.target_radius + 0.02 and bottom < -0.1:
+			# The hole is shrinking (Giant ended): its walls would squeeze this
+			# out and fling it. It is already inside, so it counts as eaten.
+			falling.remove_at(i)
+			_eat(e, h)
+			continue
 		if off_hole and bottom > -0.1:
 			# Fully back on solid ground (the hole moved away): normal object again.
 			e.falling_into = null
@@ -577,13 +725,79 @@ func _eat(e: Edible, h: Hole) -> void:
 	_grid_remove(e)
 	awake.erase(e)
 	if h and h.alive:
-		h.add_points(e.points)
+		var gained := h.combo_points(e.points)
+		h.add_points(gained)
 		if h == player:
 			eaten_count += 1
-			if _vibrate_cooldown <= 0.0 and e.points >= 5:
-				_vibrate_cooldown = 0.25
-				Input.vibrate_handheld(clampi(10 + e.points / 20, 10, 60))
+			_best_item = maxi(_best_item, e.points)
+		if _me(h):
+			_eat_feedback(e, h, gained)
 	e.queue_free()
+
+
+func _me(h: Hole) -> bool:
+	return h == player and not attract
+
+
+## Sound, vibration, shake and the floating "+N" for something the player ate.
+func _eat_feedback(e: Edible, h: Hole, gained: int) -> void:
+	# Small things sound high, big things low.
+	var big := e.points >= 40
+	var pitch := clampf(1.6 - log(float(e.points) + 1.0) * 0.18, 0.55, 1.6) * randf_range(0.93, 1.07)
+	Sfx.play("gulp_big" if big else "gulp", pitch, -4.0 if e.points < 3 else 0.0, 0 if big else 45)
+	if _vibrate_cooldown <= 0.0 and e.points >= 5:
+		_vibrate_cooldown = 0.25
+		GameState.vibrate(clampi(10 + e.points / 20, 10, 60))
+	if e.points >= 20:
+		_add_shake(clampf(e.points / 250.0, 0.12, 0.5))
+	if gained >= 5:
+		_popup(h, "+%d" % gained, h.color.lightened(0.5) if gained < 50 else Color("ffd60a"))
+
+
+func _make_popups() -> void:
+	for i in POPUP_POOL:
+		var l := Label3D.new()
+		l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		l.no_depth_test = true
+		l.font_size = 72
+		l.outline_size = 18
+		l.outline_modulate = Color(0, 0, 0, 0.75)
+		var f := UiTheme.font(800)
+		if f:
+			l.font = f
+		l.visible = false
+		l.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+		add_child(l)
+		_popups.append(l)
+
+
+func _popup(h: Hole, text: String, color: Color) -> void:
+	var l := _popups[_popup_next]
+	_popup_next = (_popup_next + 1) % _popups.size()
+	var tw: Tween = l.get_meta("tween") if l.has_meta("tween") else null
+	if tw and tw.is_valid():
+		tw.kill()
+	var spread := h.radius * 0.6 + 0.5
+	l.position = h.position + Vector3(randf_range(-spread, spread), 1.5 + h.radius * 0.5, randf_range(-spread, spread))
+	l.text = text
+	l.pixel_size = 0.008 * (1.0 + h.radius * 0.3)
+	l.modulate = color
+	l.outline_modulate.a = 0.75
+	l.visible = true
+	tw = create_tween().set_parallel()
+	tw.tween_property(l, "position:y", l.position.y + 2.0 + h.radius * 0.6, 0.9).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tw.tween_property(l, "modulate:a", 0.0, 0.5).set_delay(0.4)
+	tw.tween_property(l, "outline_modulate:a", 0.0, 0.5).set_delay(0.4)
+	tw.chain().tween_callback(func(): l.visible = false)
+	l.set_meta("tween", tw)
+
+
+## Clock ticks during the last 10 seconds.
+func _tick_sound() -> void:
+	var s := int(ceil(time_left))
+	if s <= 10 and s > 0 and s != _last_tick:
+		_last_tick = s
+		Sfx.play("tick", 1.0 if s > 3 else 1.3)
 
 
 func _rebin() -> void:
@@ -624,22 +838,29 @@ func _holes_step() -> void:
 			if b == a or not b.alive:
 				continue
 			var d := Vector2(a.position.x - b.position.x, a.position.z - b.position.z).length()
-			if HoleRules.can_eat_hole(a.radius, b.radius, d):
+			if not b.has_effect(Powerup.Kind.SHIELD) and HoleRules.can_eat_hole(a.radius, b.radius, d):
 				_eat_hole(a, b)
 
 
 func _eat_hole(a: Hole, b: Hole) -> void:
 	a.add_points(maxi(5, b.points / 2))
 	b.set_alive(false)
-	if a == player:
+	if _me(a):
 		hud.notice(tr("ATE_HOLE") % b.hole_name, 1.5)
-		Input.vibrate_handheld(80)
+		GameState.vibrate(80)
+		Sfx.play("eat_hole")
+		_add_shake(0.6)
+		_popup(a, "+%d" % maxi(5, b.points / 2), Color("80ed99"))
+	if _me(b):
+		Sfx.play("eaten")
+		GameState.vibrate(200)
+		_add_shake(0.8)
 	if mode == GameState.Mode.CLASSIC:
 		b.respawn_timer = RESPAWN_TIME
 		b.set_points(b.points / 2)
-		if b == player:
+		if _me(b):
 			hud.notice(tr("EATEN_RESPAWN"), RESPAWN_TIME)
-	elif b == player:
+	elif _me(b):
 		hud.notice(tr("ELIMINATED"), 3.0)
 
 
@@ -673,6 +894,7 @@ func _zone_step(delta: float) -> void:
 				h.set_alive(false)
 				if h == player:
 					hud.notice(tr("ELIMINATED"), 3.0)
+					Sfx.play("eaten")
 		else:
 			h.out_of_zone = 0.0
 
@@ -694,6 +916,8 @@ func clamp_to_play_area(p: Vector3) -> Vector3:
 func find_threat(me: Hole, reach: float) -> Hole:
 	if mode == GameState.Mode.SOLO:
 		return null
+	if me.has_effect(Powerup.Kind.SHIELD):
+		return null
 	var best: Hole = null
 	var best_d := reach
 	for o in holes:
@@ -712,7 +936,8 @@ func find_prey(me: Hole, reach: float) -> Hole:
 	var best: Hole = null
 	var best_d := reach
 	for o in holes:
-		if o == me or not o.alive or me.radius <= o.radius * HoleRules.EAT_HOLE_RATIO:
+		if o == me or not o.alive or me.radius <= o.radius * HoleRules.EAT_HOLE_RATIO \
+				or o.has_effect(Powerup.Kind.SHIELD):
 			continue
 		var d := o.position.distance_to(me.position)
 		if d < best_d:
@@ -728,8 +953,8 @@ func find_food(me: Hole, reach: float) -> Variant:
 	var best_score := 0.0
 	for p in powerups:
 		var pd := Vector2(p.position.x - me.position.x, p.position.z - me.position.z).length()
-		if pd < reach and me.magnet_time <= 0.0:
-			var ps := 80.0 / (pd + 4.0)
+		if pd < reach and not me.has_effect(p.kind):
+			var ps := 80.0 / (pd + 4.0) * (1.3 if p.kind == Powerup.Kind.SHIELD else 1.0)
 			if ps > best_score:
 				best_score = ps
 				best = Vector3(p.position.x, 0, p.position.z)
@@ -757,7 +982,7 @@ func _update_ground() -> void:
 			continue
 		pos.append(Vector4(h.position.x, h.position.z, h.radius, 0))
 		var c := h.color.srgb_to_linear()
-		cols.append(Vector4(c.r, c.g, c.b, 1))
+		cols.append(Vector4(c.r, c.g, c.b, h.pattern))
 	pos.resize(MAX_HOLES)
 	cols.resize(MAX_HOLES)
 	ground_mat.set_shader_parameter("holes", pos)
@@ -782,12 +1007,19 @@ func _ranking() -> Array[Hole]:
 
 
 func _on_player_level(level: int) -> void:
+	if attract:
+		return
 	hud.notice(tr("LEVEL_UP") % level, 1.0)
+	Sfx.play("level", 1.0, 0.0, 300)
 
 
 func _update_hud() -> void:
+	if hud == null:
+		return
 	hud.set_time(time_left)
-	hud.set_level(player.level, HoleRules.level_progress(player.points), player.magnet_time)
+	hud.set_level(player.level, HoleRules.level_progress(player.points))
+	hud.set_effects(player.effects)
+	hud.set_combo(player.combo)
 	match mode:
 		GameState.Mode.SOLO:
 			hud.set_info(tr("CITY_EATEN") % _percent())
@@ -812,6 +1044,8 @@ func _percent() -> float:
 # --- End of match ----------------------------------------------------------
 
 func _check_end() -> void:
+	if attract:
+		return
 	var over := time_left <= 0.0
 	if mode == GameState.Mode.BATTLE:
 		over = over or not player.alive or _alive_count() <= 1
@@ -824,22 +1058,30 @@ func _finish() -> void:
 	for h in holes:
 		h.move_dir = Vector2.ZERO
 	_update_hud()
-	var key := GameState.mode_key()
+	# Smoke runs must not touch the player's records.
+	var save := not GameState.autoplay
+	var stats_before := Skins.current_stats()
+	var key := GameState.record_key()
 	var lines := []
 	var title := tr("TIME_UP")
+	var record := false
 	match mode:
 		GameState.Mode.SOLO:
-			var pct := _percent()
+			var pct := snappedf(_percent(), 0.1)
+			if GameState.daily:
+				title = tr("DAILY_DONE")
 			lines.append(tr("CITY_EATEN") % pct)
 			lines.append(tr("POINTS") % player.points)
-			if Save.submit_record(key, snappedf(pct, 0.1)):
-				lines.append(tr("NEW_RECORD"))
+			if save:
+				record = Save.submit_record(key, pct)
+				if GameState.daily:
+					Save.submit_record("solo", pct)
 		GameState.Mode.CLASSIC:
 			var place := _ranking().find(player) + 1
 			title = tr("YOU_WIN") if place == 1 else tr("PLACE") % place
 			lines.append(tr("POINTS") % player.points)
-			if Save.submit_record(key, player.points):
-				lines.append(tr("NEW_RECORD"))
+			if save:
+				record = Save.submit_record(key, player.points)
 		GameState.Mode.BATTLE:
 			var place := 1
 			if player.alive:
@@ -850,16 +1092,28 @@ func _finish() -> void:
 				place = _alive_count() + 1
 			title = tr("YOU_WIN") if place == 1 else tr("PLACE") % place
 			lines.append(tr("POINTS") % player.points)
-			if place == 1:
-				Save.add_counter("battle_wins")
-			if Save.submit_record(key, player.points):
-				lines.append(tr("NEW_RECORD"))
-	lines.append(tr("MAP_SEED") % GameState.map_seed)
+			if save:
+				if place == 1:
+					Save.add_counter("battle_wins")
+				record = Save.submit_record(key, player.points)
+	if record:
+		lines.append(tr("NEW_RECORD"))
+	lines.append(tr("EATEN_COUNT") % eaten_count)
+	if save:
+		Save.add_counter("total_eaten", eaten_count)
+		var before := Skins.unlocked_set(stats_before)
+		for i in Skins.unlocked_set(Skins.current_stats()):
+			if not before.has(i):
+				lines.append(tr("NEW_SKIN") % tr(Skins.get_skin(i).name))
+	if not GameState.daily:
+		lines.append(tr("MAP_SEED") % GameState.map_seed)
+	Sfx.play("end")
 	hud.show_results(title, lines)
-	var all_magnets := 0
+	var all_powerups := 0
 	for h in holes:
-		all_magnets += h.magnets_taken
-	print("MATCH_END mode=%s points=%d eaten=%d/%d level=%d magnets=%d/%d movers_left=%d flung=%d" % [key, player.points,
-		eaten_count, total_count, player.level, player.magnets_taken, all_magnets, movers.size(), _flung.size()])
+		all_powerups += h.powerups_taken
+	print("MATCH_END mode=%s points=%d eaten=%d/%d level=%d powerups=%d/%d movers_left=%d flung=%d best_item=%d" % [key,
+		player.points, eaten_count, total_count, player.level, player.powerups_taken, all_powerups, movers.size(),
+		_flung.size(), _best_item])
 	if GameState.autoplay:
 		get_tree().quit()

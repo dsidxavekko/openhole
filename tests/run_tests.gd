@@ -44,6 +44,28 @@ func _init() -> void:
 	_check(not HoleRules.can_eat_hole(3.0, 2.8, 0.0), "similar sizes do not eat each other")
 	_check(not HoleRules.can_eat_hole(3.0, 1.0, 5.0), "far holes do not eat")
 
+	_check(is_equal_approx(HoleRules.combo_multiplier(1), 1.0), "no combo bonus for a single item")
+	_check(HoleRules.combo_multiplier(5) > 1.0, "combo grows")
+	_check(is_equal_approx(HoleRules.combo_multiplier(1000), 1.5), "combo bonus is capped at +50 %")
+
+	print("Skins")
+	_check(Skins.unlocked_with({}, 0) and Skins.unlocked_with({}, 1), "first skins are free")
+	_check(not Skins.unlocked_with({}, Skins.count() - 1), "last skin starts locked")
+	var all := {"classic": 1e9, "solo": 100, "battle_wins": 1e9, "total_eaten": 1e9}
+	_check(Skins.unlocked_set(all).size() == Skins.count(), "every skin can be unlocked")
+	var patterns_ok := true
+	for i in Skins.count():
+		if Skins.get_skin(i).pattern < 0 or Skins.get_skin(i).pattern > Skins.Pattern.SHIMMER:
+			patterns_ok = false
+	_check(patterns_ok, "skin patterns are known to the shader")
+
+	print("Powerup")
+	var no_shield := true
+	for i in 300:
+		if Powerup.random_kind(false) == Powerup.Kind.SHIELD:
+			no_shield = false
+	_check(no_shield, "solo never spawns a shield")
+
 	print("CityGen")
 	var a := CityGen.generate(42, 5, 0)
 	var b := CityGen.generate(42, 5, 0)
@@ -53,6 +75,7 @@ func _init() -> void:
 	_check(_hash(a) == _hash(b), "same seed gives same city")
 	_check(_hash(a) != _hash(c), "different seed gives different city")
 	_check(_hash(a) != _hash(s), "suburb theme differs from city")
+	_check(CityGen.generate(7, 2, 0).size() > 300, "menu background city has enough objects")
 	var half := CityGen.map_extent(5) / 2.0
 	var inside := true
 	for sp in a:

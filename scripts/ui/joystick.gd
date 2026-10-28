@@ -7,6 +7,8 @@ extends Control
 var vector := Vector2.ZERO
 var enabled := true
 var max_dist := 90.0
+## Touches that start on these controls (e.g. the pause button) do not move the hole.
+var blockers: Array[Control] = []
 
 var _touch := -1
 var _origin := Vector2.ZERO
@@ -30,7 +32,7 @@ func _input(event: InputEvent) -> void:
 			release()
 		return
 	if event is InputEventScreenTouch:
-		if event.pressed and _touch == -1:
+		if event.pressed and _touch == -1 and not _blocked(event.position):
 			_touch = event.index
 			_origin = event.position
 			_pos = _origin
@@ -45,6 +47,13 @@ func _input(event: InputEvent) -> void:
 		if vector.length() < 0.12:
 			vector = Vector2.ZERO
 		queue_redraw()
+
+
+func _blocked(p: Vector2) -> bool:
+	for c in blockers:
+		if c.is_visible_in_tree() and c.get_global_rect().has_point(p):
+			return true
+	return false
 
 
 func _draw() -> void:

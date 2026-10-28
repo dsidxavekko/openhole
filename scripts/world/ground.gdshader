@@ -5,7 +5,7 @@ shader_type spatial;
 const int MAX_HOLES = 16;
 
 uniform vec4 holes[MAX_HOLES];        // x, z, radius, unused
-uniform vec4 hole_colors[MAX_HOLES];  // rim colors (linear rgb)
+uniform vec4 hole_colors[MAX_HOLES];  // rim colors (linear rgb), a = pattern id (Skins.Pattern)
 uniform int hole_count = 0;
 
 uniform float half_extent = 132.0;
@@ -63,6 +63,33 @@ vec3 city_color(vec2 p) {
 	return mix(col, outside_color, outside);
 }
 
+vec3 hsv_rgb(float h) {
+	vec3 k = clamp(abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+	return pow(k, vec3(2.2));
+}
+
+// Rim colour at offset q from the hole centre; u is 0..1 across the rim.
+vec3 rim_color(vec3 c, int pattern, vec2 q, float u, float r) {
+	float ang = atan(q.y, q.x);
+	if (pattern == 1) {        // stripes, slowly turning
+		float s = smoothstep(0.42, 0.5, abs(fract(ang / TAU * 16.0 + TIME * 0.25) - 0.5) * 2.0);
+		return mix(c, c * 0.35, s);
+	} else if (pattern == 2) { // dots
+		float n = max(10.0, floor(r * 6.0));
+		float cell = fract(ang / TAU * n + TIME * 0.1) - 0.5;
+		float dd = length(vec2(cell * 2.2, (u - 0.5) * 2.0));
+		return mix(c * 0.45, min(c * 1.4 + 0.15, vec3(1.0)), 1.0 - smoothstep(0.45, 0.6, dd));
+	} else if (pattern == 3) { // rainbow
+		return hsv_rgb(fract(ang / TAU + TIME * 0.15));
+	} else if (pattern == 4) { // pulse
+		return mix(c * 0.4, min(c * 1.5 + 0.1, vec3(1.0)), 0.5 + 0.5 * sin(TIME * 5.0));
+	} else if (pattern == 5) { // shimmer: a bright highlight running around
+		float hl = smoothstep(0.8, 1.0, cos(ang - TIME * 2.5));
+		return mix(c, vec3(1.0), hl * 0.85);
+	}
+	return c;
+}
+
 void fragment() {
 	vec2 p = wpos.xz;
 	vec3 col = city_color(p);
@@ -72,9 +99,12 @@ void fragment() {
 		float d = distance(p, h.xy);
 		if (d < h.z) discard;
 		float aa = max(fwidth(d), 0.001);
-		float rim = 0.06 + h.z * 0.06;
+		float rim = 0.1 + h.z * 0.07;
 		float t = 1.0 - smoothstep(h.z + rim - aa, h.z + rim + aa, d);
-		col = mix(col, hole_colors[i].rgb, t);
+		if (t > 0.0) {
+			vec3 rc = rim_color(hole_colors[i].rgb, int(hole_colors[i].a + 0.5), p - h.xy, (d - h.z) / rim, h.z);
+			col = mix(col, rc, t);
+		}
 	}
 	if (zone.z > 0.0) {
 		float zd = distance(p, zone.xy);
