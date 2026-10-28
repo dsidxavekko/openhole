@@ -5,7 +5,6 @@ extends RefCounted
 
 enum State { WANDER, FOOD, CHASE, FLEE }
 
-const NO_CHASE_START := 15.0
 const CHASE_LIMIT := 3.0
 const CHASE_COOLDOWN := 5.0
 
@@ -18,12 +17,15 @@ var _timer := 0.0
 var _age := 0.0
 var _chase_time := 0.0
 var _chase_cooldown := 0.0
+## Seconds into the match before this bot starts hunting other holes.
+var _no_chase_start := 15.0
 
 
-func _init(p_hole: Hole, p_game: Node, p_skill: float) -> void:
+func _init(p_hole: Hole, p_game: Node, p_skill: float, p_chase_start := 15.0) -> void:
 	hole = p_hole
 	game = p_game
 	skill = p_skill
+	_no_chase_start = p_chase_start
 	target = hole.position
 
 
@@ -62,7 +64,7 @@ func _decide() -> void:
 		away.y = 0.0
 		target = game.clamp_to_play_area(hole.position + away.normalized() * (12.0 + r * 2.0))
 		return
-	if _age > NO_CHASE_START and _chase_cooldown <= 0.0 and randf() < skill:
+	if _age > _no_chase_start and _chase_cooldown <= 0.0 and randf() < skill:
 		var prey: Hole = game.find_prey(hole, 4.0 + r * 2.0)
 		if prey:
 			state = State.CHASE

@@ -57,3 +57,8 @@ static func can_eat_hole(big_r: float, small_r: float, dist: float) -> bool:
 ## Sub-linear in volume: small things matter, skyscrapers do not dominate.
 static func points_for_size(size: Vector3) -> int:
 	return maxi(1, int(ceil(2.0 * pow(size.x * size.y * size.z, 0.7))))
+
+
+## Eating streak bonus: +2.5 % per item in the streak, up to +50 %.
+static func combo_multiplier(combo: int) -> float:
+	return 1.0 + clampi(combo - 1, 0, 20) * 0.025
