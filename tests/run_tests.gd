@@ -19,6 +19,14 @@ func _hash(specs: Array) -> int:
 	return s.hash()
 
 
+func _area(soups: Array) -> float:
+	var a := 0.0
+	for s in soups:
+		for i in range(0, s.p.size(), 3):
+			a += (s.p[i + 1] - s.p[i]).cross(s.p[i + 2] - s.p[i]).length() * 0.5
+	return a
+
+
 func _init() -> void:
 	print("HoleRules")
 	_check(HoleRules.points_for_level(1) == 0, "level 1 needs 0 points")
@@ -91,6 +99,63 @@ func _init() -> void:
 		if mx < CityGen.ROAD and mz < CityGen.ROAD:
 			in_crossing += 1
 	_check(in_crossing == 0, "nobody stands inside a crossing (%d)" % in_crossing)
+
+	print("Fracture")
+	var box_mesh := BoxMesh.new()
+	box_mesh.size = Vector3(2, 6, 2)
+	var mi := MeshInstance3D.new()
+	mi.mesh = box_mesh
+	var model := Fracture.extract(mi)
+	mi.free()
+	var whole := Fracture.soup_aabb(model.soups)
+	var pieces := Fracture.split(model.soups, 8, 42)
+	_check(pieces.size() == 8, "a box splits into 8 pieces (%d)" % pieces.size())
+	var area := 0.0
+	var inside_box := true
+	var capped := true
+	for pc in pieces:
+		area += _area(pc.soups)
+		if not whole.grow(0.001).encloses(pc.aabb):
+			inside_box = false
+		if pc.cap.p.is_empty() or pc.hull.size() < 4:
+			capped = false
+	_check(inside_box, "pieces stay inside the model")
+	_check(capped, "every piece has a cap and a hull")
+	var full := _area(model.soups)
+	_check(absf(area - full) < full * 0.001, "cutting keeps the surface area (%.2f of %.2f)" % [area, full])
+	var again := Fracture.split(model.soups, 8, 42)
+	var same := again.size() == pieces.size()
+	for i in mini(again.size(), pieces.size()):
+		if not again[i].aabb.is_equal_approx(pieces[i].aabb):
+			same = false
+	_check(same, "same seed gives the same pieces")
+	var inst: Node = (load("res://assets/kenney/commercial/building-a.glb") as PackedScene).instantiate()
+	var real := Fracture.split(Fracture.extract(inst).soups, 10, 7)
+	inst.free()
+	_check(real.size() == 10, "a real building splits into 10 pieces (%d)" % real.size())
+
+	print("DebrisRules")
+	var stack: Array[Edible] = []
+	for y in 3:
+		var chunk := Edible.new()
+		chunk.position = Vector3(0, 1.0 + y * 2.0, 0)
+		chunk.height = 2.0
+		chunk.extent = 2.0
+		stack.append(chunk)
+	var aside := Edible.new()
+	aside.position = Vector3(8, 1.0, 0)
+	aside.height = 2.0
+	aside.extent = 2.0
+	stack.append(aside)
+	DebrisRules.link_supports(stack)
+	_check(stack[0].grounded and not stack[1].grounded and not stack[2].grounded, "only the bottom chunk is grounded")
+	_check(stack[0].supports.has(stack[1]) and stack[1].supports.has(stack[2]), "each chunk holds up the one above")
+	_check(not stack[0].supports.has(aside) and aside.supporters == 0, "a chunk aside is not held up")
+	for chunk in stack:
+		chunk.free()
+	_check(DebrisRules.breakable_kind("building", Vector3(10, 30, 10)), "buildings break")
+	_check(not DebrisRules.breakable_kind("person", Vector3.ONE), "people do not break")
+	_check(not DebrisRules.breakable_kind("tree", Vector3(2, 3, 2)), "small trees do not break")
 
 	print("FAILED: %d" % _fails if _fails else "ALL PASSED")
 	quit(1 if _fails else 0)

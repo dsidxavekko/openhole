@@ -66,6 +66,15 @@ var _popups: Array[Label3D] = []
 var _popup_next := 0
 var _last_tick := -1
 var _best_item := 0
+var demolition: Demolition
+var _last_tick_us := 0
+## Breakables that reached a hole this tick: [edible, hole, whole_fits].
+var _breaking: Array = []
+## Chunk points eaten by the player, shown as one "+N" per collapse.
+var _debris_gain := 0
+var _debris_gain_timer := 0.0
+var _frame_ms_sum := 0.0
+var _frames := 0
 
 
 func _ready() -> void:
@@ -77,6 +86,9 @@ func _ready() -> void:
 	bound = half - 2.0
 	half_extent = half
 	_build_ground(half)
+	demolition = Demolition.new()
+	demolition.game = self
+	add_child(demolition)
 	_spawn_city(randi() % 1000000 if attract else GameState.resolve_seed(), blocks)
 	_spawn_holes()
 	if mode == GameState.Mode.BATTLE:
@@ -232,6 +244,7 @@ func _spawn_city(seed_value: int, blocks: int) -> void:
 			continue
 		world.add_child(e)
 		_grid_add(e)
+		demolition.prepare(e)
 		total_points += e.points
 		total_count += 1
 		if e.moving:
@@ -383,8 +396,15 @@ func _physics_process(delta: float) -> void:
 		_rebin_timer = 0.5
 		_rebin()
 		_sort_lanes()
+		demolition.tick()
 
 	_update_ground()
+	# Diagnostics: average time per physics tick, engine physics included.
+	var now := Time.get_ticks_usec()
+	if _last_tick_us > 0:
+		_frame_ms_sum += (now - _last_tick_us) / 1000.0
+		_frames += 1
+	_last_tick_us = now
 	_check_end()
 
 
@@ -412,6 +432,11 @@ func _process(delta: float) -> void:
 		camera.position = camera.position.lerp(target, clampf(delta * 6.0, 0.0, 1.0))
 	sun.directional_shadow_max_distance = d * 1.6
 	_shake = maxf(_shake - delta * 1.6, 0.0)
+	if _debris_gain_timer > 0.0:
+		_debris_gain_timer -= delta
+		if _debris_gain_timer <= 0.0 and _debris_gain > 0:
+			_popup(player, "+%d" % _debris_gain, player.color.lightened(0.5) if _debris_gain < 50 else Color("ffd60a"))
+			_debris_gain = 0
 	var amp := _shake * _shake * (0.6 + player.radius * 0.08) if GameState.shake else 0.0
 	camera.h_offset = randf_range(-amp, amp)
 	camera.v_offset = randf_range(-amp, amp)
@@ -487,12 +512,18 @@ func _swallow_step() -> void:
 		var ms := h.magnet_strength()
 		for bucket in _cells_around(hp, maxf(r + 11.0, mr + 2.0)):
 			for e: Edible in bucket:
-				# Things that do not fit stay static: the hole slides under them.
-				if e.falling_into != null or not HoleRules.fits(e.fit_size, r):
+				if e.falling_into != null:
 					continue
 				var dx := e.position.x - hp.x
 				var dz := e.position.z - hp.z
 				var d := sqrt(dx * dx + dz * dz)
+				# Things that do not fit stay static: the hole slides under them,
+				# unless they can fall apart and a chunk would fit.
+				if not HoleRules.fits(e.fit_size, r):
+					if e.breakable and demolition.can_fracture(e, h, d):
+						e.falling_into = h
+						_breaking.append([e, h, false])
+					continue
 				var touching := d <= r + e.extent * 0.5 + 0.3
 				var pulled := e.magnetic and d < mr
 				if not (touching or pulled):
@@ -500,12 +531,27 @@ func _swallow_step() -> void:
 				_wake(e)
 				if d < r + e.extent * 0.3:
 					# Overlaps the hole: from now on it ignores the ground
-					# and tips over into the hole.
-					_start_fall(e, h)
+					# and tips over into the hole (big things fall apart first).
+					if e.breakable:
+						e.falling_into = h
+						_breaking.append([e, h, true])
+					else:
+						_start_fall(e, h)
 				elif e.magnetic:
 					var pull := Vector3(-dx, 0, -dz) / maxf(d, 0.01)
 					var k := 4.0 if touching else ms * (1.0 - d / mr)
 					e.apply_central_force(pull * e.mass * k)
+	# Breaking changes the grid, so it waits until the loops above are done.
+	for item in _breaking:
+		var e: Edible = item[0]
+		if not is_instance_valid(e):
+			continue
+		if item[2]:
+			demolition.collapse(e, item[1])
+		else:
+			e.falling_into = null
+			demolition.fracture(e, item[1])
+	_breaking.clear()
 
 
 func _wake(e: Edible) -> void:
@@ -663,6 +709,8 @@ func _powerup_step(delta: float) -> void:
 
 
 func _start_fall(e: Edible, h: Hole) -> void:
+	if e.kind == "debris":
+		demolition.release(e)
 	e.falling_into = h
 	e.collision_mask = EDIBLE_LAYER
 	e.gravity_scale = 1.6
@@ -722,12 +770,17 @@ func _falling_step() -> void:
 func _eat(e: Edible, h: Hole) -> void:
 	_grid_remove(e)
 	awake.erase(e)
+	var debris := e.kind == "debris"
+	if debris:
+		demolition.forget(e)
+		demolition.release(e)
 	if h and h.alive:
-		var gained := h.combo_points(e.points)
+		# Chunks of one building do not build up a streak on their own.
+		var gained := h.streak_points(e.points) if debris else h.combo_points(e.points)
 		h.add_points(gained)
 		if h == player:
 			eaten_count += 1
-			_best_item = maxi(_best_item, e.points)
+			_best_item = maxi(_best_item, e.whole_points if debris else e.points)
 		if _me(h):
 			_eat_feedback(e, h, gained)
 	e.queue_free()
@@ -739,6 +792,11 @@ func _me(h: Hole) -> bool:
 
 ## Sound, vibration, shake and the floating "+N" for something the player ate.
 func _eat_feedback(e: Edible, h: Hole, gained: int) -> void:
+	if e.kind == "debris":
+		Sfx.play("gulp", randf_range(0.7, 0.9), -6.0, 70)
+		_debris_gain += gained
+		_debris_gain_timer = 0.4
+		return
 	# Small things sound high, big things low.
 	var big := e.points >= 40
 	var pitch := clampf(1.6 - log(float(e.points) + 1.0) * 0.18, 0.55, 1.6) * randf_range(0.93, 1.07)
@@ -816,7 +874,9 @@ func _rebin() -> void:
 			awake.erase(e)
 			e.queue_free()
 			continue
-		if e.position.y - e.height * 0.5 > 2.5:
+		# Chunks of a tall building start high up: count only real jumps.
+		var base_y: float = e.get_meta("home", Vector3(0, e.height * 0.5, 0)).y - e.height * 0.5 if e.kind == "debris" else 0.0
+		if e.position.y - e.height * 0.5 > maxf(base_y, 0.0) + 2.5:
 			_flung[e.get_instance_id()] = true
 		var c := _cell_of(e.position)
 		if c != e.cell:
@@ -1110,8 +1170,8 @@ func _finish() -> void:
 	var all_powerups := 0
 	for h in holes:
 		all_powerups += h.powerups_taken
-	print("MATCH_END mode=%s points=%d eaten=%d/%d level=%d powerups=%d/%d movers_left=%d flung=%d best_item=%d" % [key,
+	print("MATCH_END mode=%s points=%d eaten=%d/%d level=%d powerups=%d/%d movers_left=%d flung=%d best_item=%d fractured=%d debris_peak=%d frame_ms=%.2f" % [key,
 		player.points, eaten_count, total_count, player.level, player.powerups_taken, all_powerups, movers.size(),
-		_flung.size(), _best_item])
+		_flung.size(), _best_item, demolition.fractured, demolition.debris_peak, _frame_ms_sum / maxf(_frames, 1)])
 	if GameState.autoplay:
 		get_tree().quit()

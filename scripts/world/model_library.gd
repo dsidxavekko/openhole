@@ -71,7 +71,7 @@ func _load(path: String) -> Dictionary:
 	_merge_aabb(probe, Transform3D.IDENTITY, acc)
 	_fix_materials(probe)
 	probe.free()
-	var info := {"scene": scene, "aabb": acc[0] if acc[0] != null else AABB(Vector3(-0.5, 0, -0.5), Vector3.ONE)}
+	var info := {"path": ROOT + path + ".glb", "scene": scene, "aabb": acc[0] if acc[0] != null else AABB(Vector3(-0.5, 0, -0.5), Vector3.ONE)}
 	_cache[path] = info
 	return info
 
