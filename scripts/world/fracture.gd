@@ -235,47 +235,70 @@ static func _tri(dst: Dictionary, p0: Vector3, n0: Vector3, u0: Vector2, p1: Vec
 	dst.uv.append(u2)
 
 
-## Fills the cut: segments are grouped into connected outlines (a tree cut
-## through trunk and crown gives two), each fanned from its centre.
+## Fills the cut: the cut edges are chained into closed outlines (a tree cut
+## through trunk and crown gives two), each triangulated as a polygon on the
+## plane. Open chains (the model is not watertight there) stay open.
 static func _add_caps(segs: PackedVector3Array, plane: Plane, front: Dictionary, back: Dictionary) -> void:
 	if segs.size() < 6:
 		return
-	var parent := {}
 	var keys := PackedStringArray()
 	keys.resize(segs.size())
+	var at := {}  # welded point -> endpoint indices (segment i has ends 2i and 2i+1)
 	for i in segs.size():
 		var q := segs[i] * QUANT
 		var k := "%d,%d,%d" % [roundi(q.x), roundi(q.y), roundi(q.z)]
 		keys[i] = k
-		if not parent.has(k):
-			parent[k] = k
-	for i in range(0, segs.size(), 2):
-		_union(parent, keys[i], keys[i + 1])
-	var groups := {}
-	for i in range(0, segs.size(), 2):
-		var r := _find(parent, keys[i])
-		if not groups.has(r):
-			groups[r] = []
-		groups[r].append(i)
-	for r in groups:
-		var list: Array = groups[r]
-		if list.size() < 3:
+		if not at.has(k):
+			at[k] = []
+		at[k].append(i)
+	var count := segs.size() / 2
+	var used := PackedByteArray()
+	used.resize(count)
+	for sid in count:
+		if keys[sid * 2] == keys[sid * 2 + 1]:
+			used[sid] = 1
+	var u := plane.normal.cross(Vector3.UP if absf(plane.normal.y) < 0.9 else Vector3.RIGHT).normalized()
+	var v := plane.normal.cross(u)
+	for sid in count:
+		if used[sid]:
 			continue
-		var centre := Vector3.ZERO
-		for i: int in list:
-			centre += segs[i] + segs[i + 1]
-		centre /= list.size() * 2.0
-		for i: int in list:
-			var a := segs[i]
-			var b := segs[i + 1]
+		used[sid] = 1
+		var loop := PackedVector3Array([segs[sid * 2]])
+		var start_key := keys[sid * 2]
+		var cur := sid * 2 + 1
+		var closed := false
+		for _guard in count:
+			var k := keys[cur]
+			if k == start_key:
+				closed = true
+				break
+			loop.append(segs[cur])
+			var nxt := -1
+			for end_i: int in at[k]:
+				if not used[end_i / 2]:
+					nxt = end_i
+					break
+			if nxt < 0:
+				break
+			used[nxt / 2] = 1
+			cur = nxt ^ 1
+		if not closed or loop.size() < 3:
+			continue
+		var poly := PackedVector2Array()
+		for p in loop:
+			poly.append(Vector2(p.dot(u), p.dot(v)))
+		var idx := Geometry2D.triangulate_polygon(poly)
+		for t in range(0, idx.size(), 3):
+			var a := loop[idx[t]]
+			var b := loop[idx[t + 1]]
+			var c := loop[idx[t + 2]]
 			# Front piece lies above the plane: its cap faces down the normal.
-			var facing := (a - centre).cross(b - centre).dot(plane.normal)
-			if facing > 0.0:
-				_cap_tri(back, centre, a, b, plane.normal)
-				_cap_tri(front, centre, b, a, -plane.normal)
+			if (b - a).cross(c - a).dot(plane.normal) > 0.0:
+				_cap_tri(back, a, b, c, plane.normal)
+				_cap_tri(front, a, c, b, -plane.normal)
 			else:
-				_cap_tri(back, centre, b, a, plane.normal)
-				_cap_tri(front, centre, a, b, -plane.normal)
+				_cap_tri(back, a, c, b, plane.normal)
+				_cap_tri(front, a, b, c, -plane.normal)
 
 
 static func _cap_tri(dst: Dictionary, a: Vector3, b: Vector3, c: Vector3, nrm: Vector3) -> void:
@@ -285,24 +308,6 @@ static func _cap_tri(dst: Dictionary, a: Vector3, b: Vector3, c: Vector3, nrm: V
 	dst.n.append(nrm)
 	dst.n.append(nrm)
 	dst.n.append(nrm)
-
-
-static func _find(parent: Dictionary, k: String) -> String:
-	var r := k
-	while parent[r] != r:
-		r = parent[r]
-	while parent[k] != r:
-		var nx: String = parent[k]
-		parent[k] = r
-		k = nx
-	return r
-
-
-static func _union(parent: Dictionary, a: String, b: String) -> void:
-	var ra := _find(parent, a)
-	var rb := _find(parent, b)
-	if ra != rb:
-		parent[ra] = rb
 
 
 ## A few extreme points of the piece (the furthest vertex along 26 directions):
