@@ -1,13 +1,10 @@
 class_name Hole
 extends Node3D
-## A hole: moves on the ground, grows by levels, has a physical "well"
-## (ring of wall colliders) that falling objects tumble into.
+## A hole: moves on the ground, grows by levels. Things that fall into it stop
+## colliding with the ground and drop through (see Game._start_fall).
 
 signal leveled_up(level: int)
 
-const WELL_LAYER := 4
-const SEGMENTS := 20
-const LIP_SEGMENTS := 24
 const WELL_DEPTH := 10.0
 const WELL_SHADER := preload("res://scripts/hole/well.gdshader")
 const COMBO_WINDOW := 1.0
@@ -32,16 +29,9 @@ var pattern := 0
 var combo := 0
 var _combo_timer := 0.0
 var controller: RefCounted = null
-## Own physics layer bit: falling objects only collide with the well they fall into,
-## never with the lip of a neighbouring hole.
-var well_layer := WELL_LAYER
 
-var _well_body: AnimatableBody3D
-var _segments: Array[CollisionShape3D] = []
-var _lip: Array[CollisionShape3D] = []
 var _well_mesh: MeshInstance3D
 var _label: Label3D
-var _shape_radius := -1.0
 var _ring: MeshInstance3D
 
 
@@ -53,24 +43,6 @@ func setup(p_name: String, p_color: Color, p_player: bool, p_pattern := 0) -> vo
 
 
 func _ready() -> void:
-	_well_body = AnimatableBody3D.new()
-	_well_body.sync_to_physics = true
-	_well_body.collision_layer = well_layer
-	_well_body.collision_mask = 0
-	add_child(_well_body)
-	for i in SEGMENTS:
-		var cs := CollisionShape3D.new()
-		cs.shape = BoxShape3D.new()
-		_well_body.add_child(cs)
-		_segments.append(cs)
-	# The "lip": solid ground around the hole that only falling objects collide with,
-	# so they rest on it and tip over the edge instead of dropping straight down.
-	for i in LIP_SEGMENTS:
-		var cs := CollisionShape3D.new()
-		cs.shape = BoxShape3D.new()
-		_well_body.add_child(cs)
-		_lip.append(cs)
-
 	var cyl := CylinderMesh.new()
 	cyl.top_radius = 0.5
 	cyl.bottom_radius = 0.5
@@ -211,6 +183,7 @@ func magnet_strength() -> float:
 	return 18.0 if has_effect(Powerup.Kind.MAGNET) else 6.0
 
 
+## How far past the rim a falling thing still counts as "in this hole".
 func lip_width() -> float:
 	return radius * 2.0 + 2.0
 
@@ -228,7 +201,6 @@ func set_alive(value: bool) -> void:
 		effects.clear()
 		combo = 0
 		_ring.visible = false
-	_well_body.collision_layer = well_layer if value else 0
 
 
 func _apply_radius() -> void:
@@ -236,26 +208,3 @@ func _apply_radius() -> void:
 	_well_mesh.position.y = -WELL_DEPTH / 2.0 - 0.01
 	_label.position = Vector3(0, 1.2 + radius * 0.4, 0)
 	_label.pixel_size = 0.006 * (1.0 + radius * 0.35)
-	# Rebuilding wall colliders is cheap but not free: only when size changed enough.
-	if absf(radius - _shape_radius) < 0.05:
-		return
-	_shape_radius = radius
-	var thickness := 0.6
-	var ring_r := radius + thickness / 2.0
-	var seg_w := TAU * ring_r / SEGMENTS * 1.15
-	for i in SEGMENTS:
-		var a := TAU * i / SEGMENTS
-		var cs := _segments[i]
-		(cs.shape as BoxShape3D).size = Vector3(seg_w, WELL_DEPTH, thickness)
-		cs.position = Vector3(sin(a) * ring_r, -WELL_DEPTH / 2.0, cos(a) * ring_r)
-		cs.rotation = Vector3(0, a, 0)
-	var lw := lip_width()
-	var mid := radius + lw / 2.0
-	var outer := radius + lw
-	var lip_w := TAU * outer / LIP_SEGMENTS * 1.05
-	for i in LIP_SEGMENTS:
-		var a := TAU * (i + 0.5) / LIP_SEGMENTS
-		var cs := _lip[i]
-		(cs.shape as BoxShape3D).size = Vector3(lip_w, 0.5, lw)
-		cs.position = Vector3(sin(a) * mid, -0.25, cos(a) * mid)
-		cs.rotation = Vector3(0, a, 0)
