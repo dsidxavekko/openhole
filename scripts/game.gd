@@ -8,7 +8,6 @@ signal attract_finished
 
 const GROUND_LAYER := 1
 const EDIBLE_LAYER := 2
-const WELL_LAYER := 4
 const CELL := 8.0
 const MAX_HOLES := 16
 const RESPAWN_TIME := 3.0
@@ -258,7 +257,6 @@ func _spawn_holes() -> void:
 			h.setup("" if attract else tr("YOU"), skin.color, true, skin.pattern)
 		else:
 			h.setup(names[i % names.size()], colors[(i - 1) % colors.size()], false)
-		h.well_layer = WELL_LAYER << i
 		add_child(h)
 		h.position = _spawn_point(i, count)
 		if is_player:
@@ -501,8 +499,8 @@ func _swallow_step() -> void:
 					continue
 				_wake(e)
 				if d < r + e.extent * 0.3:
-					# Overlaps the hole: from now on it rests on the hole's lip
-					# and tips over the edge by itself.
+					# Overlaps the hole: from now on it ignores the ground
+					# and tips over into the hole.
 					_start_fall(e, h)
 				elif e.magnetic:
 					var pull := Vector3(-dx, 0, -dz) / maxf(d, 0.01)
@@ -666,7 +664,7 @@ func _powerup_step(delta: float) -> void:
 
 func _start_fall(e: Edible, h: Hole) -> void:
 	e.falling_into = h
-	e.collision_mask = EDIBLE_LAYER | h.well_layer
+	e.collision_mask = EDIBLE_LAYER
 	e.gravity_scale = 1.6
 	e.sleeping = false
 	# Tip it over towards the middle of the hole: things narrower than the hole
@@ -695,7 +693,7 @@ func _falling_step() -> void:
 			_eat(e, h)
 			continue
 		var bottom := e.position.y - e.height * 0.5
-		# Walls of a fast (Speed) or growing hole can kick things upwards: never fly.
+		# Falling things bump into each other and can kick one upwards: never fly.
 		if e.linear_velocity.y > 2.0:
 			e.linear_velocity.y = 2.0
 		var d := INF
@@ -703,8 +701,8 @@ func _falling_step() -> void:
 			d = Vector2(e.position.x - h.position.x, e.position.z - h.position.z).length()
 		var off_hole := d > h.radius + e.extent * 0.5 + 0.3
 		if h.alive and h.radius > h.target_radius + 0.02 and bottom < -0.1:
-			# The hole is shrinking (Giant ended): its walls would squeeze this
-			# out and fling it. It is already inside, so it counts as eaten.
+			# The hole is shrinking (Giant ended) and this is already partly
+			# underground: it counts as eaten.
 			falling.remove_at(i)
 			_eat(e, h)
 			continue
