@@ -150,17 +150,21 @@ func _make_logo() -> Control:
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 2)
-	var t := UiTheme.label("HOLEDI", 96, HORIZONTAL_ALIGNMENT_CENTER, 900)
-	t.add_theme_color_override("font_color", Color.WHITE)
-	t.add_theme_constant_override("outline_size", 22)
-	t.add_theme_color_override("font_outline_color", Color("2b1d6b"))
-	t.add_theme_constant_override("shadow_offset_y", 8)
-	t.add_theme_constant_override("shadow_offset_x", 0)
-	t.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.45))
-	row.add_child(t)
+	# "OPENH" + animated hole as the "O" + "LE".
+	var make_text := func(text: String) -> Label:
+		var t := UiTheme.label(text, 80, HORIZONTAL_ALIGNMENT_CENTER, 900)
+		t.add_theme_color_override("font_color", Color.WHITE)
+		t.add_theme_constant_override("outline_size", 20)
+		t.add_theme_color_override("font_outline_color", Color("2b1d6b"))
+		t.add_theme_constant_override("shadow_offset_y", 8)
+		t.add_theme_constant_override("shadow_offset_x", 0)
+		t.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.45))
+		return t
+	row.add_child(make_text.call("OPENH"))
 	_logo = LogoHole.new()
-	_logo.custom_minimum_size = Vector2(96, 120)
+	_logo.custom_minimum_size = Vector2(80, 100)
 	row.add_child(_logo)
+	row.add_child(make_text.call("LE"))
 	# Gentle "breathing".
 	row.resized.connect(func(): row.pivot_offset = row.size / 2.0)
 	var tw := row.create_tween().set_loops()

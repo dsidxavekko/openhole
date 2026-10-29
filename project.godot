@@ -3,7 +3,7 @@ config_version=5
 
 [application]
 
-config/name="Holedio"
+config/name="OpenHole"
 config/description="Open source hole-eating city game"
 config/version="0.1.0"
 config/icon="res://icon.svg"
