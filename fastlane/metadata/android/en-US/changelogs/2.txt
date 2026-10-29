@@ -1,0 +1,1 @@
+OpenHole logo on the start screen instead of the engine one; cleaner cut faces on broken buildings; smaller APK.

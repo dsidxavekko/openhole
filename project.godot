@@ -5,7 +5,7 @@ config_version=5
 
 config/name="OpenHole"
 config/description="Open source hole-eating city game"
-config/version="0.1.0"
+config/version="0.1.1"
 config/icon="res://icon.svg"
 boot_splash/show_image=true
 boot_splash/image="res://assets/splash.png"
