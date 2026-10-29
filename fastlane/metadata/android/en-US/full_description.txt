@@ -1,0 +1,23 @@
+You are a hole in the ground. Swallow people, cars, trees and whole buildings, grow bigger and eat a procedurally generated city before the time runs out.
+
+<b>Modes</b>
+<ul>
+<li><b>Classic</b>: 2 minutes against bots, the biggest hole wins. Eaten holes respawn.</li>
+<li><b>Solo</b>: alone, eat as much of the city as you can in 2 minutes.</li>
+<li><b>Battle</b>: last hole standing while the safe zone shrinks.</li>
+<li><b>Daily challenge</b>: Solo on a city that is the same for everyone that day.</li>
+</ul>
+
+<b>Features</b>
+<ul>
+<li>Buildings, buses and rocks break into chunks and collapse into the hole. A hole that is too small for a skyscraper can still bite pieces off it.</li>
+<li>Power-ups: magnet, speed, giant and shield.</li>
+<li>Eating quickly in a row builds a combo for bonus points.</li>
+<li>Skins for your hole unlock with your records.</li>
+<li>Settings for sound, vibration, camera shake, bot skill and count, map theme and seed.</li>
+<li>Ukrainian and English.</li>
+</ul>
+
+Works offline. No ads, no tracking, no in-app purchases.
+
+3D models by Kenney (CC0), Rubik font (OFL). Made with Godot Engine.
