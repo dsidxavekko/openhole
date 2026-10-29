@@ -26,6 +26,7 @@ func _ready() -> void:
 	_streams["end"] = _notes([523.0, 659.0, 784.0, 1047.0], 0.11, 0.5, 0.45)
 	_streams["tick"] = _sweep(0.035, 1500.0, 1400.0, 0.0, 0.3)
 	_streams["ui"] = _sweep(0.06, 700.0, 1100.0, 0.0, 0.35)
+	_streams["crumble"] = _crumble(1.0, 0.8)
 
 
 func _exit_tree() -> void:
@@ -83,6 +84,27 @@ func _sweep(dur: float, f0: float, f1: float, noise: float, gain: float, vibrato
 			s = lerpf(s, lp * 3.0, noise)
 		var env := minf(1.0, t * dur / 0.006) * pow(1.0 - t, 1.6)
 		out[i] = s * env * gain
+	return _to_wav(out)
+
+
+## Collapse: low filtered rumble with random cracks of rubble on top.
+func _crumble(dur: float, gain: float) -> AudioStreamWAV:
+	var n := int(dur * RATE)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var lp := 0.0
+	var lp2 := 0.0
+	var crack := 0.0
+	for i in n:
+		var t := float(i) / n
+		lp = lerpf(lp, randf_range(-1.0, 1.0), 0.04)
+		lp2 = lerpf(lp2, lp, 0.2)
+		if randf() < 0.0025 * (1.0 - t):
+			crack = randf_range(0.4, 1.0)
+		crack *= 0.993
+		var s := lp2 * 5.0 + randf_range(-1.0, 1.0) * crack * 0.6
+		var env := minf(1.0, t * dur / 0.02) * pow(1.0 - t, 1.4)
+		out[i] = clampf(s, -1.0, 1.0) * env * gain
 	return _to_wav(out)
 
 

@@ -79,6 +79,7 @@ func build(spec: Dictionary) -> Edible:
 	e.fit_size = HoleRules.fit_size(e.extent, size.y)
 	e.points = HoleRules.points_for_size(size)
 	e.mass = clampf(size.x * size.y * size.z * 25.0, 1.0, 4000.0)
+	e.breakable = e.model_path != "" and DebrisRules.breakable_kind(kind, size)
 	e.collision_layer = EDIBLE_LAYER
 	e.collision_mask = GROUND_LAYER | EDIBLE_LAYER
 	e.moving = spec.get("m", false)
@@ -123,6 +124,9 @@ func _add_model(e: Edible, model_kind: String, kind: String, s: Vector3, p: Vect
 	holder.add_child(inst)
 	if kind == "person":
 		_pose_idle(inst)
+	e.model_path = info.path
+	e.model_basis = holder.transform.basis
+	e.model_center = a.get_center()
 
 	var size := Vector3(a.size.x * sc.x, a.size.y * sc.y, a.size.z * sc.z)
 	if rot90:

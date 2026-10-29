@@ -109,6 +109,13 @@ func combo_points(p: int) -> int:
 	return int(round(p * HoleRules.combo_multiplier(combo)))
 
 
+## Points with the current streak bonus, without growing the streak.
+func streak_points(p: int) -> int:
+	if _combo_timer > 0.0:
+		_combo_timer = COMBO_WINDOW
+	return int(round(p * HoleRules.combo_multiplier(combo)))
+
+
 func _wanted_radius() -> float:
 	return HoleRules.radius_for_level(level + (Powerup.GROW_LEVELS if has_effect(Powerup.Kind.GROW) else 0))
 
