@@ -1,8 +1,8 @@
 GODOT        ?= $(HOME)/.local/opt/godot/godot
 ANDROID_HOME ?= $(HOME)/.local/opt/android-sdk
 KEYSTORE     ?= $(HOME)/.local/opt/debug.keystore
-PKG          := org.holedio.game
-APK          := build/holedio.apk
+PKG          := org.openhole.game
+APK          := build/openhole.apk
 
 JAVA_HOME    ?= /usr/lib/jvm/java-21-openjdk-amd64
 export ANDROID_HOME JAVA_HOME

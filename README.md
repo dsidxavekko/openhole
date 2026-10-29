@@ -1,4 +1,4 @@
-# Holedio
+# OpenHole
 
 Open source (MIT) game in the spirit of hole.io: you are a hole in the ground
 that swallows a procedurally generated city. Built with Godot 4.7 for Android.
@@ -23,7 +23,7 @@ via `make GODOT=... ANDROID_HOME=... KEYSTORE=...`.
 ```sh
 make test     # headless logic tests
 make smoke    # full bot-driven match without graphics (MODE=classic|solo|battle|daily)
-make apk      # build/holedio.apk
+make apk      # build/openhole.apk
 make install  # adb install + launch on a connected phone
 make run-pc   # play on PC (WASD / arrows, mouse drag = joystick)
 # screenshots: godot --path . --rendering-driver opengl3 -- --screenshot=menu.png [--shot-sheet=skins]
