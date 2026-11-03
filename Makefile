@@ -1,10 +1,14 @@
-GODOT        ?= $(HOME)/.local/opt/godot/godot
+# Local install first, then whatever `godot` is on PATH (e.g. Homebrew on macOS).
+GODOT        ?= $(firstword $(wildcard $(HOME)/.local/opt/godot/godot) $(shell command -v godot 2>/dev/null) godot)
 ANDROID_HOME ?= $(HOME)/.local/opt/android-sdk
 KEYSTORE     ?= $(HOME)/.local/opt/debug.keystore
 PKG          := org.openhole.game
 APK          := build/openhole.apk
 
+# Only force JAVA_HOME when the Linux default exists; elsewhere keep the environment's.
+ifneq ($(wildcard /usr/lib/jvm/java-21-openjdk-amd64),)
 JAVA_HOME    ?= /usr/lib/jvm/java-21-openjdk-amd64
+endif
 export ANDROID_HOME JAVA_HOME
 export GODOT_ANDROID_KEYSTORE_DEBUG_PATH     := $(KEYSTORE)
 export GODOT_ANDROID_KEYSTORE_DEBUG_USER     := androiddebugkey
