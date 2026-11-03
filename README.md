@@ -4,6 +4,12 @@ Open source (MIT) game in the spirit of hole.io: you are a hole in the ground
 that swallows a procedurally generated city. Built with Godot 4.7 for Android
 (also runs on PC and in the browser).
 
+<p>
+  <img src="docs/screenshots/menu.png" width="240" alt="Main menu">
+  <img src="docs/screenshots/match.png" width="240" alt="A big hole swallowing a park">
+  <img src="docs/screenshots/shift.png" width="240" alt="Shift: the hole turns small and purple">
+</p>
+
 ## Game Off 2026 — Theme: SHIFT
 OpenHole is our entry for [GitHub Game Off 2026](https://itch.io/jam/game-off-2026).
 The theme is read as a **shift of roles**: a hole either hunts or is hunted, and
@@ -16,8 +22,6 @@ one button swaps the two. The small one becomes the danger.
 - it swallows **any** other hole once it dives into its inner half, however big (shielded ones are safe),
   for the usual points;
 - other power-ups are paused until it ends.
-
-![Shift in action](docs/shift.png)
 
 Then 8 s of cooldown (ready again right after a respawn). Bots close by freeze for
 a moment in surprise and then run. Shift works in every mode; there is no separate
@@ -56,7 +60,7 @@ make install  # adb install + launch on a connected phone
 make web      # browser build in out/web (itch.io), make serve-web to try it
 make run-pc   # play on PC (WASD / arrows, mouse drag = joystick, Shift = Shift)
 # screenshots: godot --path . --rendering-driver opengl3 -- --screenshot=menu.png [--shot-sheet=skins]
-# in a match with Shift: ... -- --autoplay --mode=classic --screenshot=shift.png --shot-shift
+# in a match with Shift: ... -- --autoplay --mode=classic --screenshot=shift.png --shot-shift [--lang=en]
 ```
 
 ## How swallowing works

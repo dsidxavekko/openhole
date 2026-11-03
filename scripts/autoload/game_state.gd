@@ -37,6 +37,10 @@ func _ready() -> void:
 	var lang: String = Save.get_setting("lang", "")
 	if lang == "":
 		lang = "uk" if OS.get_locale_language() == "uk" else "en"
+	# Dev helper for screenshots: "-- --lang=en" overrides the language without saving it.
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--lang="):
+			lang = arg.trim_prefix("--lang=")
 	TranslationServer.set_locale(lang)
 	map_theme = Save.get_setting("theme", MapTheme.CITY)
 	bot_count = clampi(Save.get_setting("bots", 7), MIN_BOTS, MAX_BOTS)

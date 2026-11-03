@@ -23,7 +23,7 @@ make serve-web            # http://127.0.0.1:8000 — wasm не працює з 
 make apk / make install   # Android-збірка і встановлення через adb (лише за командою)
 # macOS: SDK = Homebrew android-commandlinetools, JDK = openjdk@21, keystore = ~/.android/debug.keystore (Makefile знаходить їх сам)
 godot --path . --rendering-driver opengl3 -- --screenshot=menu.png   # скріншот
-godot --path . --rendering-driver opengl3 -- --autoplay --mode=classic --screenshot=s.png --shot-delay=18 --shot-shift   # кадр матчу з Shift
+godot --path . --rendering-driver opengl3 -- --autoplay --mode=classic --screenshot=s.png --shot-delay=18 --shot-shift --lang=en   # кадр матчу з Shift; --lang міняє мову без збереження
 ```
 - На macOS Godot стоїть через Homebrew (`/opt/homebrew/bin/godot`). Makefile сам бере `~/.local/opt/godot/godot`, а якщо його немає — `godot` з PATH. Шлях можна перевизначити: `make GODOT=...`.
 - Окремий тест запустити не можна: усі перевірки — це послідовні виклики `_check(cond, "what")` у `_init()` файлу `tests/run_tests.gd`. Під нову фічу додавай новий блок `print("Name")` + `_check(...)`. Тест пройшов, якщо в кінці виведено `ALL PASSED`.
