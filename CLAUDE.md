@@ -18,6 +18,8 @@ make test                 # headless-тести (tests/run_tests.gd), сперш
 make smoke MODE=classic   # повний матч, яким керує бот, без графіки: classic|solo|battle|daily
 make run-pc               # грати на PC (WASD/стрілки, перетягування мишею = джойстик)
 make import               # переімпорт ресурсів і перегенерація .translation
+make web                  # Web-білд для itch.io в out/web (без потоків)
+make serve-web            # http://127.0.0.1:8000 — wasm не працює з file://
 make apk / make install   # Android-збірка і встановлення через adb (лише за командою)
 godot --path . --rendering-driver opengl3 -- --screenshot=menu.png   # скріншот
 ```
@@ -37,5 +39,6 @@ godot --path . --rendering-driver opengl3 -- --screenshot=menu.png   # скрі�
 - **Пауерапи** (`scripts/world/powerup.gd`): `Kind`, `DURATIONS`, `COLORS`, `NAMES` (ключі i18n) і `WEIGHTS` (ймовірність спавну; у Solo SHIELD не спавниться).
 
 ## Платформи
-- Рендер `mobile`, фізика Jolt, 60 тіків. `export_presets.cfg` містить пресет Android (arm64-v8a, пакет `org.openhole.game`).
+- Рендер `mobile`, фізика Jolt, 60 тіків. `export_presets.cfg` містить пресети Android (arm64-v8a, пакет `org.openhole.game`) і Web.
+- Web: рендер `gl_compatibility` вмикається тільки для Web через `renderer/rendering_method.web` у `project.godot`, глобально лишається `mobile`. Білд однопотоковий (`variant/thread_support=false`), бо itch.io не віддає COOP/COEP. Jolt у Web працює. Для itch.io треба запакувати в zip вміст `out/web` (~42 МБ).
 - Метадані F-Droid лежать у `fastlane/metadata/android/{en-US,uk}/`, там же changelog `changelogs/<versionCode>.txt`. Версія задана у двох місцях: `project.godot` (`config/version`) і `export_presets.cfg` (`version/code`, `version/name`).

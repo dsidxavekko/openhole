@@ -2,3 +2,4 @@
 build/
 *.translation
 .claude/settings.local.json
+out/
