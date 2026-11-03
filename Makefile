@@ -1,14 +1,14 @@
 # Local install first, then whatever `godot` is on PATH (e.g. Homebrew on macOS).
 GODOT        ?= $(firstword $(wildcard $(HOME)/.local/opt/godot/godot) $(shell command -v godot 2>/dev/null) godot)
-ANDROID_HOME ?= $(HOME)/.local/opt/android-sdk
-KEYSTORE     ?= $(HOME)/.local/opt/debug.keystore
+# First existing path wins: Linux layout in ~/.local/opt, then macOS (Homebrew, ~/.android).
+ANDROID_HOME ?= $(firstword $(wildcard $(HOME)/.local/opt/android-sdk /opt/homebrew/share/android-commandlinetools $(HOME)/Library/Android/sdk) $(HOME)/.local/opt/android-sdk)
+KEYSTORE     ?= $(firstword $(wildcard $(HOME)/.local/opt/debug.keystore $(HOME)/.android/debug.keystore) $(HOME)/.local/opt/debug.keystore)
+ADB          ?= $(firstword $(wildcard $(ANDROID_HOME)/platform-tools/adb) adb)
 PKG          := org.openhole.game
 APK          := build/openhole.apk
 
-# Only force JAVA_HOME when the Linux default exists; elsewhere keep the environment's.
-ifneq ($(wildcard /usr/lib/jvm/java-21-openjdk-amd64),)
-JAVA_HOME    ?= /usr/lib/jvm/java-21-openjdk-amd64
-endif
+# JDK 21: Linux package path or Homebrew openjdk@21; otherwise keep the environment's.
+JAVA_HOME    ?= $(firstword $(wildcard /usr/lib/jvm/java-21-openjdk-amd64 /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home))
 export ANDROID_HOME JAVA_HOME
 export GODOT_ANDROID_KEYSTORE_DEBUG_PATH     := $(KEYSTORE)
 export GODOT_ANDROID_KEYSTORE_DEBUG_USER     := androiddebugkey
@@ -32,13 +32,13 @@ apk: import
 	$(GODOT) --headless --path . --export-debug "Android" $(APK)
 
 install:
-	adb install -r $(APK)
-	adb shell am start -n $(PKG)/com.godot.game.GodotAppLauncher || adb shell monkey -p $(PKG) 1
+	$(ADB) install -r $(APK)
+	$(ADB) shell am start -n $(PKG)/com.godot.game.GodotAppLauncher || $(ADB) shell monkey -p $(PKG) 1
 
 run: apk install
 
 logcat:
-	adb logcat -s godot:V
+	$(ADB) logcat -s godot:V
 
 run-pc:
 	$(GODOT) --path . --rendering-driver opengl3
