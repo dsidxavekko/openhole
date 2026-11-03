@@ -16,7 +16,7 @@ break into chunks and collapse into you; bigger holes hunt smaller ones.
 
 Then press **SHIFT**.
 
-For 2.5 seconds your hole turns small and fast. Nobody can eat you. You eat nothing
+For 3.5 seconds your hole turns small and fast. Nobody can eat you. You eat nothing
 of the city. But you swallow **any** hole you dive into, however big it is. The
 giant that was chasing you a second ago is now your prey, and the bots nearby
 freeze in surprise before they run.
@@ -44,7 +44,7 @@ It is a button, not a random pick-up. You decide when to swap sides.
 
 ## Controls
 
-- **Touch:** drag anywhere to move (floating joystick). **SHIFT** button in the bottom-right corner.
+- **Touch:** drag anywhere to move (floating joystick). **SHIFT** button in the bottom-left corner.
 - **PC / browser:** WASD or arrow keys to move (mouse drag works too). **Shift** key to shift.
 
 ## Credits

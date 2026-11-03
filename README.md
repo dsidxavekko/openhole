@@ -9,7 +9,7 @@ OpenHole is our entry for [GitHub Game Off 2026](https://itch.io/jam/game-off-20
 The theme is read as a **shift of roles**: a hole either hunts or is hunted, and
 one button swaps the two. The small one becomes the danger.
 
-**Shift** (button in the bottom-right corner, `Shift` key on PC), for 2.5 s:
+**Shift** (button in the bottom-left corner, `Shift` key on PC), for 3.5 s:
 - the hole shrinks to 0.45× its size and moves 25 % faster;
 - nobody can eat it, and the Battle zone does not hurt it;
 - it eats nothing of the city (things already falling in are worth 0 points);

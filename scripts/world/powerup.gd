@@ -6,7 +6,7 @@ extends Node3D
 enum Kind { MAGNET, SPEED, GROW, SHIELD, SHIFT }
 
 const DURATIONS := {Kind.MAGNET: 8.0, Kind.SPEED: 6.0, Kind.GROW: 8.0, Kind.SHIELD: 8.0,
-	Kind.SHIFT: 2.5}
+	Kind.SHIFT: 3.5}
 const COLORS := {Kind.MAGNET: Color("e63946"), Kind.SPEED: Color("ffd60a"),
 	Kind.GROW: Color("38b000"), Kind.SHIELD: Color("4cc9f0"), Kind.SHIFT: Color("e0aaff")}
 const NAMES := {Kind.MAGNET: "PU_MAGNET", Kind.SPEED: "PU_SPEED", Kind.GROW: "PU_GROW",

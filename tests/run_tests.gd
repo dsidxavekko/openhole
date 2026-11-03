@@ -108,7 +108,7 @@ func _init() -> void:
 	_check(not hole.start_shift(), "shift cannot start twice")
 	hole.step(1.0, 100.0)
 	_check(is_equal_approx(hole.effects[Powerup.Kind.SPEED], 6.0), "paused power-up time stands still")
-	hole.step(2.0, 100.0)
+	hole.step(Powerup.DURATIONS[Powerup.Kind.SHIFT], 100.0)
 	_check(not hole.is_shifted() and hole.has_effect(Powerup.Kind.SPEED), "shift ends, power-ups resume")
 	_check(not hole.shift_ready() and hole.shift_cooldown > 0.0, "cooldown starts after shift ends")
 	hole.step(HoleRules.SHIFT_COOLDOWN + 0.1, 100.0)

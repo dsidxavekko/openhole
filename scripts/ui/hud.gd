@@ -119,8 +119,9 @@ func _ready() -> void:
 	_root.add_child(_notice)
 
 	_fps = UiTheme.label("", 20, HORIZONTAL_ALIGNMENT_LEFT)
-	_fps.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	_fps.position = Vector2(12, -36)
+	# Bottom-right: the SHIFT button takes the bottom-left corner.
+	_fps.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_fps.position = Vector2(-110, -36)
 	_fps.modulate = Color(1, 1, 1, 0.6)
 	_root.add_child(_fps)
 
@@ -145,13 +146,13 @@ func _ready() -> void:
 	_results.add_child(_results_box)
 
 
-## Big round SHIFT button in the bottom-right corner; the fill shows the cooldown.
+## Big round SHIFT button in the bottom-left corner; the fill shows the cooldown.
 func _build_shift_button() -> void:
 	const SIZE := 150.0
 	var c: Color = Powerup.COLORS[Powerup.Kind.SHIFT]
 	shift_button = Button.new()
-	shift_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	shift_button.position = Vector2(-SIZE - 32, -SIZE - 48)
+	shift_button.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	shift_button.position = Vector2(32, -SIZE - 48)
 	shift_button.custom_minimum_size = Vector2(SIZE, SIZE)
 	shift_button.size = Vector2(SIZE, SIZE)
 	shift_button.focus_mode = Control.FOCUS_NONE

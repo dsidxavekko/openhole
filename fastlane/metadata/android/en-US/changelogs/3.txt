@@ -1,1 +1,1 @@
-New SHIFT button: for 2.5 s your hole turns small and fast, cannot be eaten and swallows any hole it dives into. Made for GitHub Game Off 2026.
+New SHIFT button: for 3.5 s your hole turns small and fast, cannot be eaten and swallows any hole it dives into. Made for GitHub Game Off 2026.
