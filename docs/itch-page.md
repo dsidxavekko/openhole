@@ -21,7 +21,7 @@ of the city. But you swallow **any** hole you dive into, however big it is. The
 giant that was chasing you a second ago is now your prey, and the bots nearby
 freeze in surprise before they run.
 
-After that you are a normal hole again and must wait 6 seconds for the next Shift.
+After that you are a normal hole again and must wait 8 seconds for the next Shift.
 Choose the moment well.
 
 **Modes:** Classic (2 minutes vs bots, biggest hole wins), Solo, Battle (last hole
@@ -35,10 +35,10 @@ Being small becomes the dangerous state, and you pay for it:
 
 - you shrink to 0.45× your size and move 25 % faster;
 - you cannot be eaten, and the Battle zone cannot hurt you;
-- you swallow any hole you dive into (shielded holes are still safe);
+- you swallow any hole once you reach its inner half (shielded holes are still safe);
 - you eat nothing of the city, so you stop growing while shifted;
 - your other power-ups are paused until Shift ends;
-- then 6 seconds of cooldown.
+- then 8 seconds of cooldown.
 
 It is a button, not a random pick-up. You decide when to swap sides.
 

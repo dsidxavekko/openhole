@@ -13,13 +13,13 @@ one button swaps the two. The small one becomes the danger.
 - the hole shrinks to 0.45× its size and moves 25 % faster;
 - nobody can eat it, and the Battle zone does not hurt it;
 - it eats nothing of the city (things already falling in are worth 0 points);
-- it swallows **any** other hole it dives into, however big (shielded ones are safe),
+- it swallows **any** other hole once it dives into its inner half, however big (shielded ones are safe),
   for the usual points;
 - other power-ups are paused until it ends.
 
 ![Shift in action](docs/shift.png)
 
-Then 6 s of cooldown (ready again right after a respawn). Bots close by freeze for
+Then 8 s of cooldown (ready again right after a respawn). Bots close by freeze for
 a moment in surprise and then run. Shift works in every mode; there is no separate
 mode for it.
 

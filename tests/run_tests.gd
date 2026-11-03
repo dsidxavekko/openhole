@@ -81,7 +81,8 @@ func _init() -> void:
 	_check(HoleRules.shifted_radius(top) >= base and HoleRules.shifted_radius(top) < top, "a max hole shrinks but stays above base size")
 	_check(HoleRules.shifted_speed(10.0) > 10.0, "shift is faster")
 	_check(HoleRules.can_shift_eat(1.0, 10.0, 2.0), "shifted hole eats a much bigger one it dives into")
-	_check(HoleRules.can_shift_eat(1.0, top, top * 0.5), "no size limit for a shifted hole")
+	_check(HoleRules.can_shift_eat(1.0, top, top * 0.3), "no size limit for a shifted hole")
+	_check(not HoleRules.can_shift_eat(1.0, 10.0, 6.0), "a shifted hole must dive into the inner half")
 	_check(not HoleRules.can_shift_eat(1.0, 10.0, 9.5), "shifted hole on the rim does not eat yet")
 	_check(not HoleRules.can_shift_eat(1.0, 0.5, 9.0), "far holes are not eaten")
 	var k := Powerup.Kind.SHIFT

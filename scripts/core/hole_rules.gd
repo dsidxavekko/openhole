@@ -71,7 +71,7 @@ static func combo_multiplier(combo: int) -> float:
 const SHIFT_RADIUS_FACTOR := 0.45
 const SHIFT_SPEED_FACTOR := 1.25
 ## Seconds after a shift ends before the next one is ready.
-const SHIFT_COOLDOWN := 6.0
+const SHIFT_COOLDOWN := 8.0
 
 
 static func shifted_radius(radius: float) -> float:
@@ -82,10 +82,15 @@ static func shifted_speed(speed: float) -> float:
 	return speed * SHIFT_SPEED_FACTOR
 
 
-## A shifted hole eats another one when its centre is well inside the other's
-## rim. There is no size limit: the small one swallows the big one.
+## How deep a shifted hole must dive into another one, as a share of its radius.
+const SHIFT_EAT_DEPTH := 0.5
+
+
+## A shifted hole eats another one when it reaches the inner half of it.
+## There is no size limit: the small one swallows the big one, but it has to
+## dive in deep within its short Shift, which takes aim on a big target.
 static func can_shift_eat(shifted_r: float, target_r: float, dist: float) -> bool:
-	return dist < maxf(target_r * 0.8, shifted_r)
+	return dist < maxf(target_r * SHIFT_EAT_DEPTH, shifted_r)
 
 
 ## Room for future limits (e.g. a minimum level); every level can shift for now.
