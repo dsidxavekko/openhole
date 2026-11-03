@@ -27,6 +27,8 @@ var powerups_taken := 0
 var shift_cooldown := 0.0
 var shifts_used := 0
 var holes_eaten_shifted := 0
+## Seconds left of a quick resize (Shift start and end are near-instant).
+var _fast_resize := 0.0
 ## Rim pattern id for the ground shader (Skins.Pattern).
 var pattern := 0
 ## Eating streak: things eaten less than COMBO_WINDOW apart.
@@ -167,10 +169,15 @@ func step(delta: float, bound: float) -> void:
 				effects.erase(k)
 				if k == Powerup.Kind.SHIFT:
 					shift_cooldown = HoleRules.SHIFT_COOLDOWN
+					_fast_resize = 0.25
 		target_radius = _wanted_radius()
 		_update_ring()
 	if not is_equal_approx(radius, target_radius):
-		radius = move_toward(radius, target_radius, delta * maxf(1.0, target_radius * 0.8))
+		var rate := maxf(1.0, target_radius * 0.8)
+		if _fast_resize > 0.0:
+			_fast_resize -= delta
+			rate = maxf(rate, absf(radius - target_radius) / maxf(_fast_resize, delta))
+		radius = move_toward(radius, target_radius, delta * rate)
 		_apply_radius()
 
 
@@ -225,6 +232,7 @@ func start_shift() -> bool:
 		return false
 	effects[Powerup.Kind.SHIFT] = Powerup.DURATIONS[Powerup.Kind.SHIFT]
 	shifts_used += 1
+	_fast_resize = 0.25
 	target_radius = _wanted_radius()
 	_update_ring()
 	return true

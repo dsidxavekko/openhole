@@ -129,7 +129,14 @@ func _take_screenshot(path: String) -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--shot-delay="):
 			delay = arg.trim_prefix("--shot-delay=").to_float()
-	await get_tree().create_timer(delay).timeout
+	if "--shot-shift" in OS.get_cmdline_user_args():
+		# Catch the Shift effects mid-way.
+		await get_tree().create_timer(maxf(delay - 0.25, 0.0)).timeout
+		player.shift_cooldown = 0.0
+		_player_shift()
+		await get_tree().create_timer(0.25).timeout
+	else:
+		await get_tree().create_timer(delay).timeout
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png(path)
 	print("SCREENSHOT ", path)
