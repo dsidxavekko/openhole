@@ -21,6 +21,7 @@ make import               # переімпорт ресурсів і перег�
 make web                  # Web-білд для itch.io в out/web (без потоків)
 make serve-web            # http://127.0.0.1:8000 — wasm не працює з file://
 make apk / make install   # Android-збірка і встановлення через adb (лише за командою)
+# macOS: SDK = Homebrew android-commandlinetools, JDK = openjdk@21, keystore = ~/.android/debug.keystore (Makefile знаходить їх сам)
 godot --path . --rendering-driver opengl3 -- --screenshot=menu.png   # скріншот
 godot --path . --rendering-driver opengl3 -- --autoplay --mode=classic --screenshot=s.png --shot-delay=18 --shot-shift   # кадр матчу з Shift
 ```
