@@ -1,7 +1,25 @@
 # OpenHole
 
 Open source (MIT) game in the spirit of hole.io: you are a hole in the ground
-that swallows a procedurally generated city. Built with Godot 4.7 for Android.
+that swallows a procedurally generated city. Built with Godot 4.7 for Android
+(also runs on PC and in the browser).
+
+## Game Off 2026 — Theme: SHIFT
+OpenHole is our entry for [GitHub Game Off 2026](https://itch.io/jam/game-off-2026).
+The theme is read as a **shift of roles**: a hole either hunts or is hunted, and
+one button swaps the two. The small one becomes the danger.
+
+**Shift** (button in the bottom-right corner, `Shift` key on PC), for 2.5 s:
+- the hole shrinks to 0.45× its size and moves 25 % faster;
+- nobody can eat it, and the Battle zone does not hurt it;
+- it eats nothing of the city (things already falling in are worth 0 points);
+- it swallows **any** other hole it dives into, however big (shielded ones are safe),
+  for the usual points;
+- other power-ups are paused until it ends.
+
+Then 6 s of cooldown (ready again right after a respawn). Bots close by freeze for
+a moment in surprise and then run. Shift works in every mode; there is no separate
+mode for it.
 
 ## Modes
 - **Classic** — 2 minutes vs 7 bots, biggest hole wins. Eaten holes respawn.
@@ -11,6 +29,7 @@ that swallows a procedurally generated city. Built with Godot 4.7 for Android.
 - **Daily challenge** — Solo on a city that is the same for everyone that day.
 
 Power-ups: magnet, speed, giant (+2 levels for a while), shield (cannot be eaten).
+They pause while you are shifted.
 Eating things quickly in a row builds a combo (up to +50 % points).
 Skins for your hole unlock with records. Settings: sound, vibration, camera shake,
 FPS counter, bot skill and count, map theme and seed.
@@ -32,7 +51,7 @@ make test     # headless logic tests
 make smoke    # full bot-driven match without graphics (MODE=classic|solo|battle|daily)
 make apk      # build/openhole.apk
 make install  # adb install + launch on a connected phone
-make run-pc   # play on PC (WASD / arrows, mouse drag = joystick)
+make run-pc   # play on PC (WASD / arrows, mouse drag = joystick, Shift = Shift)
 # screenshots: godot --path . --rendering-driver opengl3 -- --screenshot=menu.png [--shot-sheet=skins]
 ```
 
