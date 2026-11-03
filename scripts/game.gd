@@ -108,6 +108,7 @@ func _ready() -> void:
 		get_tree().reload_current_scene())
 	hud.to_menu.connect(_go_menu)
 	hud.resume.connect(resume)
+	hud.shift_pressed.connect(_player_shift)
 	_update_hud()
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--screenshot="):
@@ -367,8 +368,12 @@ func _physics_process(delta: float) -> void:
 	if player.alive:
 		if _player_bot:
 			_player_bot.update(delta)
+			if not attract and _autoplay_wants_shift():
+				_player_shift()
 		else:
 			player.move_dir = _player_input()
+			if Input.is_action_just_pressed("shift_button"):
+				_player_shift()
 
 	for h in holes:
 		if h.alive:
@@ -442,6 +447,8 @@ func _process(delta: float) -> void:
 	camera.v_offset = randf_range(-amp, amp)
 	if running:
 		_update_pointers()
+		hud.set_shift(player.shift_ready(), player.shift_cooldown, player.is_shifted(),
+			player.effects.get(Powerup.Kind.SHIFT, 0.0))
 	_hud_timer -= delta
 	if _hud_timer <= 0.0 and running:
 		_hud_timer = 0.2
@@ -466,7 +473,12 @@ func _update_pointers() -> void:
 		if o == player or not o.alive:
 			continue
 		var c := Color()
-		if o.radius > player.radius * HoleRules.EAT_HOLE_RATIO:
+		if player.is_shifted():
+			# Shifted: everything that can be eaten is prey, nothing is a threat.
+			if not o.can_be_eaten():
+				continue
+			c = Color("80ed99")
+		elif o.radius > player.radius * HoleRules.EAT_HOLE_RATIO:
 			c = Color("ff4d6d")
 		elif player.radius > o.radius * HoleRules.EAT_HOLE_RATIO:
 			c = Color("80ed99")
@@ -504,7 +516,8 @@ func _player_input() -> Vector2:
 
 func _swallow_step() -> void:
 	for h in holes:
-		if not h.alive:
+		# A shifted hole eats no city (and its magnet does not pull).
+		if not h.alive or h.is_shifted():
 			continue
 		var r := h.radius
 		var hp := h.position
@@ -777,6 +790,9 @@ func _eat(e: Edible, h: Hole) -> void:
 	if h and h.alive:
 		# Chunks of one building do not build up a streak on their own.
 		var gained := h.streak_points(e.points) if debris else h.combo_points(e.points)
+		# Things still falling when the hole shifted finish falling but are worth nothing.
+		if h.is_shifted():
+			gained = 0
 		h.add_points(gained)
 		if h == player:
 			eaten_count += 1
@@ -886,6 +902,68 @@ func _rebin() -> void:
 			awake.erase(e)
 
 
+# --- Shift -----------------------------------------------------------------
+
+const SHIFT_FREEZE := 1.0
+const SHIFT_FREEZE_REACH := 14.0
+
+
+## The player's role swap: small, fast, cannot be eaten, eats any hole it dives into.
+func _player_shift() -> void:
+	if not running or attract or get_tree().paused or not player.start_shift():
+		return
+	hud.notice(tr("SHIFT_ACTIVE"), 1.2)
+	hud.flash(Powerup.COLORS[Powerup.Kind.SHIFT])
+	GameState.vibrate(60)
+	_add_shake(0.3)
+	Sfx.play("shift")
+	_shift_wave(player)
+	# Bots close by freeze for a moment in surprise, then run.
+	for h in holes:
+		if h != player and h.alive and h.controller is BotAI \
+				and h.position.distance_to(player.position) < SHIFT_FREEZE_REACH + h.radius:
+			(h.controller as BotAI).freeze(SHIFT_FREEZE)
+
+
+## Smoke runs: the bot-driven player shifts when a hole it could dive into is close.
+func _autoplay_wants_shift() -> bool:
+	if mode == GameState.Mode.SOLO or not player.shift_ready():
+		return false
+	for o in holes:
+		if o != player and o.alive and o.can_be_eaten() \
+				and o.position.distance_to(player.position) < o.radius + 10.0:
+			return true
+	return false
+
+
+## A ring that runs out over the ground from the hole.
+func _shift_wave(h: Hole) -> void:
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.9
+	torus.outer_radius = 1.0
+	torus.rings = 48
+	torus.ring_segments = 4
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.no_depth_test = true
+	mat.albedo_color = Color(Powerup.COLORS[Powerup.Kind.SHIFT], 0.9)
+	var wave := MeshInstance3D.new()
+	wave.mesh = torus
+	wave.material_override = mat
+	wave.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	wave.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	add_child(wave)
+	wave.position = h.position + Vector3(0, 0.2, 0)
+	var r0 := h.radius + 0.5
+	var r1 := r0 + SHIFT_FREEZE_REACH
+	wave.scale = Vector3(r0, 0.3, r0)
+	var tw := create_tween().set_parallel()
+	tw.tween_property(wave, "scale", Vector3(r1, 0.3, r1), 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.5).set_ease(Tween.EASE_IN)
+	tw.chain().tween_callback(wave.queue_free)
+
+
 # --- Holes vs holes --------------------------------------------------------
 
 func _holes_step() -> void:
@@ -896,15 +974,23 @@ func _holes_step() -> void:
 			if b == a or not b.alive:
 				continue
 			var d := Vector2(a.position.x - b.position.x, a.position.z - b.position.z).length()
-			if not b.has_effect(Powerup.Kind.SHIELD) and HoleRules.can_eat_hole(a.radius, b.radius, d):
+			if not b.can_be_eaten():
+				continue
+			if a.is_shifted():
+				if HoleRules.can_shift_eat(a.radius, b.radius, d):
+					_eat_hole(a, b)
+			elif HoleRules.can_eat_hole(a.radius, b.radius, d):
 				_eat_hole(a, b)
 
 
 func _eat_hole(a: Hole, b: Hole) -> void:
+	var shifted := a.is_shifted()
+	if shifted:
+		a.holes_eaten_shifted += 1
 	a.add_points(maxi(5, b.points / 2))
 	b.set_alive(false)
 	if _me(a):
-		hud.notice(tr("ATE_HOLE") % b.hole_name, 1.5)
+		hud.notice(tr("SHIFT_EAT" if shifted else "ATE_HOLE") % b.hole_name, 1.5)
 		GameState.vibrate(80)
 		Sfx.play("eat_hole")
 		_add_shake(0.6)
@@ -945,6 +1031,9 @@ func _zone_step(delta: float) -> void:
 		if not h.alive:
 			continue
 		if Vector2(h.position.x, h.position.z).length() > zone_radius:
+			# Shift protects from the zone: the clock stops while shifted.
+			if h.is_shifted():
+				continue
 			h.out_of_zone += delta
 			if h == player and int(h.out_of_zone * 2.0) != int((h.out_of_zone - delta) * 2.0):
 				hud.notice(tr("ZONE_WARNING"), 0.6)
@@ -974,14 +1063,19 @@ func clamp_to_play_area(p: Vector3) -> Vector3:
 func find_threat(me: Hole, reach: float) -> Hole:
 	if mode == GameState.Mode.SOLO:
 		return null
-	if me.has_effect(Powerup.Kind.SHIELD):
+	if not me.can_be_eaten():
 		return null
 	var best: Hole = null
 	var best_d := reach
 	for o in holes:
-		if o == me or not o.alive or o.radius <= me.radius * HoleRules.EAT_HOLE_RATIO:
+		if o == me or not o.alive:
 			continue
 		var d := o.position.distance_to(me.position) - o.radius
+		if o.is_shifted():
+			# A shifted hole eats anything: keep a wider berth from it.
+			d -= 4.0
+		elif o.radius <= me.radius * HoleRules.EAT_HOLE_RATIO:
+			continue
 		if d < best_d:
 			best_d = d
 			best = o
@@ -994,8 +1088,9 @@ func find_prey(me: Hole, reach: float) -> Hole:
 	var best: Hole = null
 	var best_d := reach
 	for o in holes:
-		if o == me or not o.alive or me.radius <= o.radius * HoleRules.EAT_HOLE_RATIO \
-				or o.has_effect(Powerup.Kind.SHIELD):
+		if o == me or not o.alive or not o.can_be_eaten():
+			continue
+		if not me.is_shifted() and me.radius <= o.radius * HoleRules.EAT_HOLE_RATIO:
 			continue
 		var d := o.position.distance_to(me.position)
 		if d < best_d:
@@ -1039,7 +1134,7 @@ func _update_ground() -> void:
 		if not h.alive or pos.size() >= MAX_HOLES:
 			continue
 		pos.append(Vector4(h.position.x, h.position.z, h.radius, 0))
-		var c := h.color.srgb_to_linear()
+		var c := (Powerup.COLORS[Powerup.Kind.SHIFT] as Color if h.is_shifted() else h.color).srgb_to_linear()
 		cols.append(Vector4(c.r, c.g, c.b, h.pattern))
 	pos.resize(MAX_HOLES)
 	cols.resize(MAX_HOLES)
@@ -1170,8 +1265,9 @@ func _finish() -> void:
 	var all_powerups := 0
 	for h in holes:
 		all_powerups += h.powerups_taken
-	print("MATCH_END mode=%s points=%d eaten=%d/%d level=%d powerups=%d/%d movers_left=%d flung=%d best_item=%d fractured=%d debris_peak=%d frame_ms=%.2f" % [key,
+	print("MATCH_END mode=%s points=%d eaten=%d/%d level=%d powerups=%d/%d movers_left=%d flung=%d best_item=%d fractured=%d debris_peak=%d frame_ms=%.2f shifts=%d shift_eats=%d" % [key,
 		player.points, eaten_count, total_count, player.level, player.powerups_taken, all_powerups, movers.size(),
-		_flung.size(), _best_item, demolition.fractured, demolition.debris_peak, _frame_ms_sum / maxf(_frames, 1)])
+		_flung.size(), _best_item, demolition.fractured, demolition.debris_peak, _frame_ms_sum / maxf(_frames, 1),
+		player.shifts_used, player.holes_eaten_shifted])
 	if GameState.autoplay:
 		get_tree().quit()

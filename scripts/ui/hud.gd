@@ -6,6 +6,7 @@ extends CanvasLayer
 signal play_again
 signal to_menu
 signal resume
+signal shift_pressed
 
 const BOARD_ROWS := 5
 
@@ -28,6 +29,12 @@ var _pointers: PointerLayer
 var _notice_time := 0.0
 var _fps: Label
 var _last_combo := 0
+var shift_button: Button
+var _shift_fill: ShiftFill
+var _shift_label: Label
+var _shift_banner: Label
+var _flash: ColorRect
+var _shift_was_ready := true
 
 
 func _ready() -> void:
@@ -96,6 +103,8 @@ func _ready() -> void:
 	_root.add_child(_pause_button)
 	joystick.blockers.append(_pause_button)
 
+	_build_shift_button()
+
 	_info_label = UiTheme.label("", 28, HORIZONTAL_ALIGNMENT_RIGHT, 600)
 	_info_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	_info_label.position = Vector2(-280, 120)
@@ -115,6 +124,12 @@ func _ready() -> void:
 	_fps.modulate = Color(1, 1, 1, 0.6)
 	_root.add_child(_fps)
 
+	_flash = ColorRect.new()
+	_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_flash.color = Color(1, 1, 1, 0)
+	_root.add_child(_flash)
+
 	_pause = _overlay()
 	_pause_box = _pause.get_meta("box")
 	_root.add_child(_pause)
@@ -128,6 +143,69 @@ func _ready() -> void:
 	_results_box = VBoxContainer.new()
 	_results_box.add_theme_constant_override("separation", 16)
 	_results.add_child(_results_box)
+
+
+## Big round SHIFT button in the bottom-right corner; the fill shows the cooldown.
+func _build_shift_button() -> void:
+	const SIZE := 150.0
+	var c: Color = Powerup.COLORS[Powerup.Kind.SHIFT]
+	shift_button = Button.new()
+	shift_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	shift_button.position = Vector2(-SIZE - 32, -SIZE - 48)
+	shift_button.custom_minimum_size = Vector2(SIZE, SIZE)
+	shift_button.size = Vector2(SIZE, SIZE)
+	shift_button.focus_mode = Control.FOCUS_NONE
+	UiTheme.style_button(shift_button, UiTheme.round_button(Color(0, 0, 0, 0.4)),
+		UiTheme.round_button(Color(0, 0, 0, 0.6)))
+	shift_button.add_theme_stylebox_override("disabled", UiTheme.round_button(Color(0, 0, 0, 0.4)))
+	_shift_fill = ShiftFill.new()
+	_shift_fill.color = c
+	_shift_fill.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_shift_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shift_button.add_child(_shift_fill)
+	_shift_label = UiTheme.label("SHIFT", 34, HORIZONTAL_ALIGNMENT_CENTER, 800)
+	_shift_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_shift_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_shift_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shift_button.add_child(_shift_label)
+	# React on touch down, not on release: it is an action button.
+	shift_button.button_down.connect(func(): shift_pressed.emit())
+	_root.add_child(shift_button)
+	joystick.blockers.append(shift_button)
+
+	_shift_banner = UiTheme.label("", 40, HORIZONTAL_ALIGNMENT_CENTER, 800)
+	_shift_banner.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_shift_banner.position = Vector2(-200, -260)
+	_shift_banner.custom_minimum_size = Vector2(400, 0)
+	_shift_banner.add_theme_color_override("font_color", c.lightened(0.2))
+	_shift_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_shift_banner)
+
+
+## ready: can press now; cooldown_left: seconds until ready; active: shifted, active_left: seconds left.
+func set_shift(ready: bool, cooldown_left: float, active: bool, active_left: float) -> void:
+	shift_button.disabled = not ready
+	if active:
+		_shift_fill.value = active_left / Powerup.DURATIONS[Powerup.Kind.SHIFT]
+		_shift_fill.active = true
+		_shift_label.text = "SHIFT"
+		_shift_banner.text = "%s  %.1f" % [tr("PU_SHIFT").to_upper(), active_left]
+	else:
+		_shift_fill.active = false
+		_shift_fill.value = 1.0 if ready else 1.0 - clampf(cooldown_left / HoleRules.SHIFT_COOLDOWN, 0.0, 1.0)
+		_shift_label.text = "SHIFT" if ready or cooldown_left <= 0.0 else "%d" % int(ceil(cooldown_left))
+		_shift_banner.text = ""
+	_shift_label.modulate.a = 1.0 if ready or active else 0.7
+	_shift_fill.queue_redraw()
+	if ready and not _shift_was_ready:
+		UiTheme.bounce(shift_button)
+	_shift_was_ready = ready
+
+
+## Short full-screen colour flash.
+func flash(color: Color) -> void:
+	_flash.color = Color(color, 0.35)
+	create_tween().tween_property(_flash, "color:a", 0.0, 0.35)
 
 
 ## Dimmed full-screen layer with a centred panel; the panel's VBox is in meta "box".
@@ -276,6 +354,8 @@ func show_results(title: String, lines: Array) -> void:
 	joystick.enabled = false
 	_pause.visible = false
 	_pause_button.visible = false
+	shift_button.visible = false
+	_shift_banner.text = ""
 	_notice.text = ""
 	_combo_label.text = ""
 	_pointers.pointers = []
@@ -298,6 +378,25 @@ func show_results(title: String, lines: Array) -> void:
 	var tw := create_tween().set_parallel()
 	tw.tween_property(_results, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(_results, "modulate:a", 1.0, 0.2)
+
+
+## Cooldown/duration disc inside the SHIFT button.
+class ShiftFill extends Control:
+	var color := Color.WHITE
+	var value := 1.0
+	var active := false
+
+	func _draw() -> void:
+		var c := size / 2.0
+		var r := minf(size.x, size.y) / 2.0 - 8.0
+		if active:
+			draw_circle(c, r, Color(color, 0.85))
+			draw_arc(c, r + 3.0, -PI / 2.0, -PI / 2.0 + TAU * value, 48, Color.WHITE, 6.0, true)
+		elif value >= 1.0:
+			draw_circle(c, r, Color(color, 0.55))
+			draw_arc(c, r, 0.0, TAU, 48, color.lightened(0.4), 4.0, true)
+		else:
+			draw_arc(c, r - 4.0, -PI / 2.0, -PI / 2.0 + TAU * value, 48, Color(color, 0.8), 8.0, true)
 
 
 ## Two bars of a pause icon.

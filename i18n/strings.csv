@@ -76,3 +76,8 @@ SKIN_ICE,Ice,Лід
 SKIN_RUBY,Ruby,Рубін
 SKIN_GOLD,Gold,Золото
 SKIN_RAINBOW,Rainbow,Веселка
+PU_SHIFT,Shift,Зсув
+SHIFT_ACTIVE,Roles swapped!,Ролі змінилися!
+SHIFT_READY,Shift ready,Зсув готовий
+SHIFT_EAT,Shifted! You ate %s,Зсув! Ти з'їв %s
+SHIFT_COOLDOWN,Shift in %ds,Зсув через %dс

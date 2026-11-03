@@ -27,6 +27,8 @@ func _ready() -> void:
 	_streams["tick"] = _sweep(0.035, 1500.0, 1400.0, 0.0, 0.3)
 	_streams["ui"] = _sweep(0.06, 700.0, 1100.0, 0.0, 0.35)
 	_streams["crumble"] = _crumble(1.0, 0.8)
+	# Shift: a fast downward whoosh with a wobble, the hole shrinking.
+	_streams["shift"] = _sweep(0.38, 1100.0, 160.0, 0.15, 0.55, 14.0)
 
 
 func _exit_tree() -> void:

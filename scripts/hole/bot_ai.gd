@@ -19,6 +19,8 @@ var _chase_time := 0.0
 var _chase_cooldown := 0.0
 ## Seconds into the match before this bot starts hunting other holes.
 var _no_chase_start := 15.0
+## Seconds left standing still in surprise (the player just shifted nearby).
+var _frozen := 0.0
 
 
 func _init(p_hole: Hole, p_game: Node, p_skill: float, p_chase_start := 15.0) -> void:
@@ -29,7 +31,21 @@ func _init(p_hole: Hole, p_game: Node, p_skill: float, p_chase_start := 15.0) ->
 	target = hole.position
 
 
+## Stand still for `seconds`, then decide again right away (usually: flee).
+func freeze(seconds: float) -> void:
+	_frozen = maxf(_frozen, seconds)
+	_timer = 0.0
+
+
+func is_frozen() -> bool:
+	return _frozen > 0.0
+
+
 func update(delta: float) -> void:
+	if _frozen > 0.0:
+		_frozen -= delta
+		hole.move_dir = hole.move_dir.lerp(Vector2.ZERO, clampf(delta * 12.0, 0.0, 1.0))
+		return
 	_age += delta
 	_chase_cooldown -= delta
 	if state == State.CHASE:
