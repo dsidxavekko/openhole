@@ -62,3 +62,32 @@ static func points_for_size(size: Vector3) -> int:
 ## Eating streak bonus: +2.5 % per item in the streak, up to +50 %.
 static func combo_multiplier(combo: int) -> float:
 	return 1.0 + clampi(combo - 1, 0, 20) * 0.025
+
+
+# --- Shift: the player's role swap ------------------------------------------
+# While shifted the hole is small and fast, cannot be eaten, eats no city,
+# and swallows any hole it dives into, however big.
+
+const SHIFT_RADIUS_FACTOR := 0.45
+const SHIFT_SPEED_FACTOR := 1.25
+## Seconds after a shift ends before the next one is ready.
+const SHIFT_COOLDOWN := 6.0
+
+
+static func shifted_radius(radius: float) -> float:
+	return maxf(radius * SHIFT_RADIUS_FACTOR, BASE_RADIUS * 0.75)
+
+
+static func shifted_speed(speed: float) -> float:
+	return speed * SHIFT_SPEED_FACTOR
+
+
+## A shifted hole eats another one when its centre is well inside the other's
+## rim. There is no size limit: the small one swallows the big one.
+static func can_shift_eat(shifted_r: float, target_r: float, dist: float) -> bool:
+	return dist < maxf(target_r * 0.8, shifted_r)
+
+
+## Room for future limits (e.g. a minimum level); every level can shift for now.
+static func can_be_shifted(_level: int) -> bool:
+	return true

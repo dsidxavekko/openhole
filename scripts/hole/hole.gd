@@ -23,6 +23,10 @@ var out_of_zone := 0.0
 ## Active power-ups: Powerup.Kind -> seconds left.
 var effects := {}
 var powerups_taken := 0
+## Seconds until Shift is ready again (counts down only while not shifted).
+var shift_cooldown := 0.0
+var shifts_used := 0
+var holes_eaten_shifted := 0
 ## Rim pattern id for the ground shader (Skins.Pattern).
 var pattern := 0
 ## Eating streak: things eaten less than COMBO_WINDOW apart.
@@ -33,6 +37,8 @@ var controller: RefCounted = null
 var _well_mesh: MeshInstance3D
 var _label: Label3D
 var _ring: MeshInstance3D
+## Second, outer ring shown only while shifted.
+var _ring2: MeshInstance3D
 
 
 func setup(p_name: String, p_color: Color, p_player: bool, p_pattern := 0) -> void:
@@ -84,6 +90,12 @@ func _ready() -> void:
 	_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_ring.visible = false
 	add_child(_ring)
+	_ring2 = MeshInstance3D.new()
+	_ring2.mesh = torus
+	_ring2.material_override = ring_mat.duplicate()
+	_ring2.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_ring2.visible = false
+	add_child(_ring2)
 	_apply_radius()
 
 
@@ -116,11 +128,20 @@ func streak_points(p: int) -> int:
 	return int(round(p * HoleRules.combo_multiplier(combo)))
 
 
-func _wanted_radius() -> float:
+## Radius without Shift (Giant included).
+func _base_radius() -> float:
 	return HoleRules.radius_for_level(level + (Powerup.GROW_LEVELS if has_effect(Powerup.Kind.GROW) else 0))
 
 
+func _wanted_radius() -> float:
+	var r := _base_radius()
+	return HoleRules.shifted_radius(r) if is_shifted() else r
+
+
 func speed() -> float:
+	if is_shifted():
+		# Based on the normal size, so shrinking does not slow the hole down.
+		return HoleRules.shifted_speed(7.0 + _base_radius() * 0.45)
 	var s := 7.0 + radius * 0.45
 	return s * Powerup.SPEED_FACTOR if has_effect(Powerup.Kind.SPEED) else s
 
@@ -133,11 +154,19 @@ func step(delta: float, bound: float) -> void:
 		_combo_timer -= delta
 		if _combo_timer <= 0.0:
 			combo = 0
+	if shift_cooldown > 0.0 and not is_shifted():
+		shift_cooldown -= delta
 	if not effects.is_empty():
+		var shifted := is_shifted()
 		for k in effects.keys():
+			# Shift pauses the other power-ups: their time stands still.
+			if shifted and k != Powerup.Kind.SHIFT:
+				continue
 			effects[k] -= delta
 			if effects[k] <= 0.0:
 				effects.erase(k)
+				if k == Powerup.Kind.SHIFT:
+					shift_cooldown = HoleRules.SHIFT_COOLDOWN
 		target_radius = _wanted_radius()
 		_update_ring()
 	if not is_equal_approx(radius, target_radius):
@@ -148,10 +177,11 @@ func step(delta: float, bound: float) -> void:
 ## Ring around the hole showing the strongest active power-up.
 func _update_ring() -> void:
 	_ring.visible = not effects.is_empty()
+	_ring2.visible = _ring.visible and is_shifted()
 	if not _ring.visible:
 		return
 	var kind := -1
-	for k in [Powerup.Kind.SHIELD, Powerup.Kind.GROW, Powerup.Kind.SPEED, Powerup.Kind.MAGNET]:
+	for k in [Powerup.Kind.SHIFT, Powerup.Kind.SHIELD, Powerup.Kind.GROW, Powerup.Kind.SPEED, Powerup.Kind.MAGNET]:
 		if has_effect(k):
 			kind = k
 			break
@@ -161,13 +191,48 @@ func _update_ring() -> void:
 	_ring.position.y = 0.15
 	var mat := _ring.material_override as StandardMaterial3D
 	var c: Color = Powerup.COLORS[kind]
-	# Blink during the last two seconds.
-	var a := 0.6 if effects[kind] > 2.0 or int(effects[kind] * 6.0) % 2 == 0 else 0.15
+	# Blink during the last two seconds (the short Shift: the last 0.7 s).
+	var warn := 0.7 if kind == Powerup.Kind.SHIFT else 2.0
+	var a := 0.6 if effects[kind] > warn or int(effects[kind] * 6.0) % 2 == 0 else 0.15
 	mat.albedo_color = Color(c, a)
+	if _ring2.visible:
+		# Outer ring pulses outwards, out of phase with the inner one.
+		var t := fposmod(Time.get_ticks_msec() * 0.0025, 1.0)
+		var r2 := (radius + 0.8) * (1.15 + t * 0.6)
+		_ring2.scale = Vector3(r2, r2 * 0.4, r2)
+		_ring2.position.y = 0.15
+		(_ring2.material_override as StandardMaterial3D).albedo_color = Color(c, 0.7 * (1.0 - t))
 
 
 func has_effect(kind: int) -> bool:
+	# While shifted, the other power-ups are paused and do nothing.
+	if kind != Powerup.Kind.SHIFT and is_shifted():
+		return false
 	return effects.get(kind, 0.0) > 0.0
+
+
+func is_shifted() -> bool:
+	return effects.get(Powerup.Kind.SHIFT, 0.0) > 0.0
+
+
+func shift_ready() -> bool:
+	return alive and not is_shifted() and shift_cooldown <= 0.0 and HoleRules.can_be_shifted(level)
+
+
+## Starts the Shift role swap. Returns false when it is not ready.
+func start_shift() -> bool:
+	if not shift_ready():
+		return false
+	effects[Powerup.Kind.SHIFT] = Powerup.DURATIONS[Powerup.Kind.SHIFT]
+	shifts_used += 1
+	target_radius = _wanted_radius()
+	_update_ring()
+	return true
+
+
+## Shielded and shifted holes cannot be eaten.
+func can_be_eaten() -> bool:
+	return not has_effect(Powerup.Kind.SHIELD) and not is_shifted()
 
 
 func give_effect(kind: int, seconds: float) -> void:
@@ -204,10 +269,13 @@ func snap_radius() -> void:
 func set_alive(value: bool) -> void:
 	alive = value
 	visible = value
+	# Shift is ready again after a respawn.
+	shift_cooldown = 0.0
 	if not value:
 		effects.clear()
 		combo = 0
 		_ring.visible = false
+		_ring2.visible = false
 
 
 func _apply_radius() -> void:

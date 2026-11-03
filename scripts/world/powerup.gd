@@ -2,13 +2,15 @@ class_name Powerup
 extends Node3D
 ## Floating power-up icon. Picked up by any hole passing over it.
 
-enum Kind { MAGNET, SPEED, GROW, SHIELD }
+## SHIFT is the player's Shift button, never spawned on the map (no weight).
+enum Kind { MAGNET, SPEED, GROW, SHIELD, SHIFT }
 
-const DURATIONS := {Kind.MAGNET: 8.0, Kind.SPEED: 6.0, Kind.GROW: 8.0, Kind.SHIELD: 8.0}
+const DURATIONS := {Kind.MAGNET: 8.0, Kind.SPEED: 6.0, Kind.GROW: 8.0, Kind.SHIELD: 8.0,
+	Kind.SHIFT: 2.5}
 const COLORS := {Kind.MAGNET: Color("e63946"), Kind.SPEED: Color("ffd60a"),
-	Kind.GROW: Color("38b000"), Kind.SHIELD: Color("4cc9f0")}
+	Kind.GROW: Color("38b000"), Kind.SHIELD: Color("4cc9f0"), Kind.SHIFT: Color("e0aaff")}
 const NAMES := {Kind.MAGNET: "PU_MAGNET", Kind.SPEED: "PU_SPEED", Kind.GROW: "PU_GROW",
-	Kind.SHIELD: "PU_SHIELD"}
+	Kind.SHIELD: "PU_SHIELD", Kind.SHIFT: "PU_SHIFT"}
 ## Spawn weights; the shield is useless alone, so Solo never spawns it.
 const WEIGHTS := {Kind.MAGNET: 35, Kind.SPEED: 25, Kind.GROW: 20, Kind.SHIELD: 20}
 const SPEED_FACTOR := 1.5

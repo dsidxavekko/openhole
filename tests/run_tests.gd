@@ -74,6 +74,52 @@ func _init() -> void:
 			no_shield = false
 	_check(no_shield, "solo never spawns a shield")
 
+	print("Shift")
+	var base := HoleRules.BASE_RADIUS
+	var top := HoleRules.radius_for_level(HoleRules.MAX_LEVEL)
+	_check(HoleRules.shifted_radius(base) < base, "shift makes a new hole smaller")
+	_check(HoleRules.shifted_radius(top) >= base and HoleRules.shifted_radius(top) < top, "a max hole shrinks but stays above base size")
+	_check(HoleRules.shifted_speed(10.0) > 10.0, "shift is faster")
+	_check(HoleRules.can_shift_eat(1.0, 10.0, 2.0), "shifted hole eats a much bigger one it dives into")
+	_check(HoleRules.can_shift_eat(1.0, top, top * 0.5), "no size limit for a shifted hole")
+	_check(not HoleRules.can_shift_eat(1.0, 10.0, 9.5), "shifted hole on the rim does not eat yet")
+	_check(not HoleRules.can_shift_eat(1.0, 0.5, 9.0), "far holes are not eaten")
+	var k := Powerup.Kind.SHIFT
+	_check(Powerup.DURATIONS.has(k) and Powerup.COLORS.has(k) and Powerup.NAMES.has(k), "SHIFT has duration, colour and name")
+	_check(Powerup.WEIGHTS.get(k, 0) == 0, "SHIFT has no spawn weight")
+	var never_shift := true
+	for i in 1000:
+		if Powerup.random_kind(true) == k:
+			never_shift = false
+	_check(never_shift, "SHIFT is never spawned on the map")
+
+	var hole := Hole.new()
+	hole._ready()
+	hole.set_points(HoleRules.points_for_level(8))
+	hole.snap_radius()
+	var normal_r := hole.radius
+	var normal_speed := hole.speed()
+	hole.give_effect(Powerup.Kind.SPEED, 6.0)
+	_check(hole.shift_ready() and hole.start_shift(), "shift starts when ready")
+	_check(hole.is_shifted() and not hole.can_be_eaten(), "shifted hole cannot be eaten")
+	_check(not hole.has_effect(Powerup.Kind.SPEED), "other power-ups are paused while shifted")
+	_check(hole.speed() > normal_speed and hole.target_radius < normal_r, "shifted hole is faster and smaller")
+	_check(not hole.start_shift(), "shift cannot start twice")
+	hole.step(1.0, 100.0)
+	_check(is_equal_approx(hole.effects[Powerup.Kind.SPEED], 6.0), "paused power-up time stands still")
+	hole.step(2.0, 100.0)
+	_check(not hole.is_shifted() and hole.has_effect(Powerup.Kind.SPEED), "shift ends, power-ups resume")
+	_check(not hole.shift_ready() and hole.shift_cooldown > 0.0, "cooldown starts after shift ends")
+	hole.step(HoleRules.SHIFT_COOLDOWN + 0.1, 100.0)
+	_check(hole.shift_ready(), "shift is ready after the cooldown")
+	hole.start_shift()
+	hole.set_alive(false)
+	hole.set_alive(true)
+	_check(hole.shift_ready() and not hole.is_shifted(), "respawn clears shift and its cooldown")
+	hole.give_effect(Powerup.Kind.SHIELD, 5.0)
+	_check(not hole.can_be_eaten(), "shield still protects")
+	hole.free()
+
 	print("CityGen")
 	var a := CityGen.generate(42, 5, 0)
 	var b := CityGen.generate(42, 5, 0)
