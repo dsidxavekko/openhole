@@ -22,6 +22,7 @@ make web                  # Web-білд для itch.io в out/web (без по�
 make serve-web            # http://127.0.0.1:8000 — wasm не працює з file://
 make apk / make install   # Android-збірка і встановлення через adb (лише за командою)
 godot --path . --rendering-driver opengl3 -- --screenshot=menu.png   # скріншот
+godot --path . --rendering-driver opengl3 -- --autoplay --mode=classic --screenshot=s.png --shot-delay=18 --shot-shift   # кадр матчу з Shift
 ```
 - На macOS Godot стоїть через Homebrew (`/opt/homebrew/bin/godot`). Makefile сам бере `~/.local/opt/godot/godot`, а якщо його немає — `godot` з PATH. Шлях можна перевизначити: `make GODOT=...`.
 - Окремий тест запустити не можна: усі перевірки — це послідовні виклики `_check(cond, "what")` у `_init()` файлу `tests/run_tests.gd`. Під нову фічу додавай новий блок `print("Name")` + `_check(...)`. Тест пройшов, якщо в кінці виведено `ALL PASSED`.
@@ -36,6 +37,7 @@ godot --path . --rendering-driver opengl3 -- --screenshot=menu.png   # скрі�
 - **Як працює ковтання**: земля — один суцільний колайдер, а дірки вирізаються в шейдері землі (`ground.gdshader`, параметри `holes`/`hole_colors` з `_update_ground`). Предмет, що влазить і перекриває дірку, скидає шар землі з `collision_mask`, падає й зараховується, коли опускається під поверхню.
 - **Руйнування**: `Fracture` (`scripts/world/fracture.gd`) ріже моделі на шматки площинами в `WorkerThreadPool`. `Demolition` підміняє будівлю шматками (`kind == "debris"`) і стежить, хто кого підпирає (`DebrisRules`).
 - **UI**: `Hud` (CanvasLayer, увесь UI з коду, стилі в `UiTheme`) спілкується з `Game` сигналами (`play_again`, `to_menu`, `resume`). `FloatingJoystick` ігнорує тачі по контролах зі списку `joystick.blockers` — сюди треба додавати кожну нову кнопку HUD.
+- **Shift** (механіка для Game Off 2026): `Powerup.Kind.SHIFT` живе в `Hole.effects`, але ніколи не спавниться (у `WEIGHTS` його немає). Числа задані в `HoleRules` (`SHIFT_*`, `can_shift_eat`). `Hole.has_effect()` для інших бонусів повертає false, поки дірка shifted, тобто вони на паузі. Перевірку «чи можна з'їсти» роби через `Hole.can_be_eaten()`, а не через SHIELD напряму. Кнопка в HUD шле сигнал `shift_pressed` → `Game._player_shift()`, клавіша — дія `shift_button`.
 - **Пауерапи** (`scripts/world/powerup.gd`): `Kind`, `DURATIONS`, `COLORS`, `NAMES` (ключі i18n) і `WEIGHTS` (ймовірність спавну; у Solo SHIELD не спавниться).
 
 ## Платформи

@@ -17,6 +17,8 @@ one button swaps the two. The small one becomes the danger.
   for the usual points;
 - other power-ups are paused until it ends.
 
+![Shift in action](docs/shift.png)
+
 Then 6 s of cooldown (ready again right after a respawn). Bots close by freeze for
 a moment in surprise and then run. Shift works in every mode; there is no separate
 mode for it.
@@ -51,8 +53,10 @@ make test     # headless logic tests
 make smoke    # full bot-driven match without graphics (MODE=classic|solo|battle|daily)
 make apk      # build/openhole.apk
 make install  # adb install + launch on a connected phone
+make web      # browser build in out/web (itch.io), make serve-web to try it
 make run-pc   # play on PC (WASD / arrows, mouse drag = joystick, Shift = Shift)
 # screenshots: godot --path . --rendering-driver opengl3 -- --screenshot=menu.png [--shot-sheet=skins]
+# in a match with Shift: ... -- --autoplay --mode=classic --screenshot=shift.png --shot-shift
 ```
 
 ## How swallowing works
