@@ -20,8 +20,6 @@ uniform vec3 walk_color : source_color = vec3(0.78, 0.78, 0.76);
 uniform vec3 road_color : source_color = vec3(0.30, 0.31, 0.34);
 uniform vec3 line_color : source_color = vec3(0.95, 0.92, 0.75);
 uniform vec3 outside_color : source_color = vec3(0.38, 0.55, 0.36);
-// 0 by day: no lamp pools, markings do not glow.
-uniform float night = 0.0;
 
 // Battle zone: x, z, radius; radius <= 0 disables it.
 uniform vec3 zone = vec3(0.0, 0.0, 0.0);
@@ -53,14 +51,8 @@ float vnoise(highp vec2 p) {
 		mix(hash12(i + vec2(0.0, 1.0)), hash12(i + vec2(1.0, 1.0)), f.x), f.y);
 }
 
-// Smooth bump over +-r, pure ALU (no exp) for the mobile fragment budget.
-float bump(float x, float r) {
-	float t = clamp(1.0 - x * x / (r * r), 0.0, 1.0);
-	return t * t;
-}
-
-// rgb = surface colour, a = how strongly the markings should glow at night.
-vec4 city_color(highp vec2 p) {
+// rgb = surface colour.
+vec3 city_color(highp vec2 p) {
 	vec2 w = max(fwidth(p), vec2(0.001));
 	// Layout along each axis: road, block, road, block, ..., road.
 	vec2 m = mod(p + vec2(half_extent), pitch);
@@ -113,24 +105,10 @@ vec4 city_color(highp vec2 p) {
 	float marks = clamp(line * 0.9 + zeb * 0.7, 0.0, 1.0);
 	vec3 road_col = mix(road_c, line_color, marks);
 
-	// Night: warm pools of light under the street lamps along every road.
-	if (night > 0.5) {
-		float dv = abs(mod(p.y + 8.0, 16.0) - 8.0);
-		float kv = min(abs(m.x), abs(m.x - road));
-		float mv = max(step(m.x, road + sidewalk), step(pitch - sidewalk, m.x));
-		float dh = abs(mod(p.x + 8.0, 16.0) - 8.0);
-		float kh = min(abs(m.y), abs(m.y - road));
-		float mhn = max(step(m.y, road + sidewalk), step(pitch - sidewalk, m.y));
-		float pools = mv * bump(dv, 4.4) * bump(kv - 1.3, 2.7)
-			+ mhn * bump(dh, 4.4) * bump(kh - 1.3, 2.7);
-		road_col += vec3(1.0, 0.72, 0.35) * pools * 0.75;
-		block_col += vec3(1.0, 0.72, 0.35) * pools * 0.45;
-	}
-
 	vec3 col = mix(block_col, road_col, is_road);
 	float outside = max(smoothstep(half_extent - w.x, half_extent + w.x, abs(p.x)),
 		smoothstep(half_extent - w.y, half_extent + w.y, abs(p.y)));
-	return vec4(mix(col, outside_color, outside), marks);
+	return mix(col, outside_color, outside);
 }
 
 vec3 hsv_rgb(float h) {
@@ -162,8 +140,7 @@ vec3 rim_color(vec3 c, int pattern, vec2 q, float u, float r) {
 
 void fragment() {
 	highp vec2 p = wpos.xz;
-	vec4 city = city_color(p);
-	vec3 col = city.rgb;
+	vec3 col = city_color(p);
 	for (int i = 0; i < MAX_HOLES; i++) {
 		if (i >= hole_count) break;
 		vec4 h = holes[i];
@@ -198,6 +175,4 @@ void fragment() {
 	ALBEDO = col;
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.0;
-	// Markings glow faintly at night.
-	EMISSION = vec3(1.0, 0.85, 0.55) * city.a * 0.6 * night;
 }

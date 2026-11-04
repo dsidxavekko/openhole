@@ -7,14 +7,12 @@ extends RefCounted
 const GROUND_LAYER := 1
 const EDIBLE_LAYER := 2
 const SMALL_VIS_RANGE := 70.0
-const NIGHT_FACADE := preload("res://scripts/world/building_night.gdshader")
 
-## Night theme: dark primitives and lit facades on buildings.
+## Night theme: dark primitive materials (no shader work).
 var night := false
 var library := ModelLibrary.new()
 var _materials := {}
 var _shapes := {}
-var _night_mats := {}
 var _box := BoxMesh.new()
 var _cyl := CylinderMesh.new()
 var _sphere := SphereMesh.new()
@@ -128,8 +126,6 @@ func _add_model(e: Edible, model_kind: String, kind: String, s: Vector3, p: Vect
 	holder.add_child(inst)
 	if kind == "person":
 		_pose_idle(inst)
-	if kind == "building" or kind == "house" or model_kind == "skyscraper":
-		_apply_facade(inst, kind == "house")
 	e.model_path = info.path
 	e.model_basis = holder.transform.basis
 	e.model_center = a.get_center()
@@ -156,33 +152,6 @@ func _pose_idle(n: Node) -> void:
 	ap.stop(true)
 	ap.get_parent().remove_child(ap)
 	ap.free()
-
-
-## Night facades: swap the model's wall materials for the window-grid shader
-## (or back to the originals by day). The meshes are shared resources, so this
-## must stay reversible when the theme changes between matches.
-func _apply_facade(n: Node, is_house: bool) -> void:
-	if n is MeshInstance3D:
-		var mesh: Mesh = (n as MeshInstance3D).mesh
-		var originals := library.original_materials(mesh)
-		for s in mesh.get_surface_count():
-			var src: Material = originals[s] if s < originals.size() else null
-			if not night:
-				mesh.surface_set_material(s, src)
-				continue
-			if src == null:
-				continue
-			var key := "%d|%s" % [src.get_instance_id(), "h" if is_house else "b"]
-			if not _night_mats.has(key):
-				var sm := ShaderMaterial.new()
-				sm.shader = NIGHT_FACADE
-				sm.set_shader_parameter("albedo", (src as BaseMaterial3D).albedo_color.darkened(0.25))
-				sm.set_shader_parameter("window_density", 0.32 if is_house else 0.55)
-				sm.set_shader_parameter("seed", float(absi(key.hash()) % 977) * 0.017)
-				_night_mats[key] = sm
-			mesh.surface_set_material(s, _night_mats[key])
-	for c in n.get_children():
-		_apply_facade(c, is_house)
 
 
 func _make_cheap(n: Node) -> void:

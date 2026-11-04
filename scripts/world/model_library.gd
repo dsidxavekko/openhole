@@ -50,10 +50,6 @@ const FIT_HEIGHT := ["person", "tree", "lamp", "sign", "tlight", "cone", "pot", 
 
 var _cache := {}
 
-## Mesh -> surface materials as shipped (captured at first load). Meshes are
-## shared resources, so the night facade shader must be able to restore them.
-static var _original := {}
-
 
 func has_kind(kind: String) -> bool:
 	return MODELS.has(kind)
@@ -74,28 +70,10 @@ func _load(path: String) -> Dictionary:
 	var acc: Array = [null]
 	_merge_aabb(probe, Transform3D.IDENTITY, acc)
 	_fix_materials(probe)
-	_capture_originals(probe)
 	probe.free()
 	var info := {"path": ROOT + path + ".glb", "scene": scene, "aabb": acc[0] if acc[0] != null else AABB(Vector3(-0.5, 0, -0.5), Vector3.ONE)}
 	_cache[path] = info
 	return info
-
-
-## Surface materials of `mesh` as they came with the model.
-func original_materials(mesh: Mesh) -> Array:
-	if not _original.has(mesh):
-		var out := []
-		for s in mesh.get_surface_count():
-			out.append(mesh.surface_get_material(s))
-		_original[mesh] = out
-	return _original[mesh]
-
-
-func _capture_originals(n: Node) -> void:
-	if n is MeshInstance3D:
-		original_materials((n as MeshInstance3D).mesh)
-	for c in n.get_children():
-		_capture_originals(c)
 
 
 static func _merge_aabb(n: Node, xf: Transform3D, acc: Array) -> void:

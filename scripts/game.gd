@@ -185,68 +185,34 @@ func _go_menu() -> void:
 # --- World -----------------------------------------------------------------
 
 func _build_environment() -> void:
-	# Per-theme palette: sky gradient, warm/cold light, light distance fog.
-	var sky_mat := ProceduralSkyMaterial.new()
-	var sun_color := Color(1.0, 0.96, 0.88)
-	var sun_energy := 0.85
 	var env := Environment.new()
-	env.background_mode = Environment.BG_SKY
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color("9ad1f5")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.75, 0.78, 0.85)
+	env.ambient_light_energy = 0.45
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.fog_enabled = true
-	env.fog_sky_affect = 0.12
-	match _theme():
-		GameState.MapTheme.SUBURB:
-			# Warm late afternoon.
-			sky_mat.sky_top_color = Color("5d94d6")
-			sky_mat.sky_horizon_color = Color("f2dfc4")
-			sky_mat.ground_bottom_color = Color("4c5a36")
-			sky_mat.ground_horizon_color = Color("e4cf9f")
-			env.ambient_light_color = Color(0.85, 0.74, 0.62)
-			env.ambient_light_energy = 0.5
-			env.fog_light_color = Color("e6d2b0")
-			env.fog_density = 0.0032
-			sun_color = Color(1.0, 0.86, 0.66)
-			sun_energy = 0.95
-		GameState.MapTheme.NIGHT:
-			# Moonlit: cold dim light; the ground and facades do the glowing.
-			sky_mat.sky_top_color = Color("070b20")
-			sky_mat.sky_horizon_color = Color("1c2647")
-			sky_mat.ground_bottom_color = Color("04060f")
-			sky_mat.ground_horizon_color = Color("131b32")
-			env.ambient_light_color = Color(0.3, 0.36, 0.55)
-			env.ambient_light_energy = 0.5
-			env.fog_light_color = Color("0c1328")
-			env.fog_density = 0.006
-			sun_color = Color(0.58, 0.68, 1.0)
-			sun_energy = 0.55
-		_:
-			# Clear noon over the city.
-			sky_mat.sky_top_color = Color("3d8fdd")
-			sky_mat.sky_horizon_color = Color("cfe6f2")
-			sky_mat.ground_bottom_color = Color("3f5a33")
-			sky_mat.ground_horizon_color = Color("b9d3a8")
-			env.ambient_light_color = Color(0.72, 0.76, 0.85)
-			env.ambient_light_energy = 0.45
-			env.fog_light_color = Color("c4dcee")
-			env.fog_density = 0.0028
-	var sky := Sky.new()
-	sky.sky_material = sky_mat
-	env.sky = sky
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
 
 	sun = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-55, -35, 0)
-	sun.light_color = sun_color
-	sun.light_energy = sun_energy
 	sun.shadow_enabled = true
 	sun.shadow_normal_bias = 1.5
 	sun.shadow_blur = 1.5
 	sun.directional_shadow_max_distance = 90.0
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	add_child(sun)
+
+	if _theme() == GameState.MapTheme.NIGHT:
+		# Night is a cheap palette swap: darker sky colour and a dim moon.
+		# No sky gradient, no fog, no shader extras — those lagged phones.
+		env.background_color = Color("0d1024")
+		env.ambient_light_color = Color(0.32, 0.36, 0.52)
+		env.ambient_light_energy = 0.5
+		sun.light_color = Color(0.58, 0.68, 1.0)
+		sun.light_energy = 0.55
 
 	camera = Camera3D.new()
 	camera.fov = 50.0
@@ -292,7 +258,6 @@ func _build_ground(half: float) -> void:
 		ground_mat.set_shader_parameter("road_color", Color("1d1f27"))
 		ground_mat.set_shader_parameter("line_color", Color("ffd98a"))
 		ground_mat.set_shader_parameter("outside_color", Color("121a11"))
-		ground_mat.set_shader_parameter("night", 1.0)
 	var mi := MeshInstance3D.new()
 	mi.mesh = plane
 	mi.material_override = ground_mat
