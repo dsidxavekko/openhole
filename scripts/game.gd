@@ -142,7 +142,9 @@ func _take_screenshot(path: String) -> void:
 	else:
 		await get_tree().create_timer(delay).timeout
 	await RenderingServer.frame_post_draw
-	get_viewport().get_texture().get_image().save_png(path)
+	var img := get_viewport().get_texture().get_image()
+	img.convert(Image.FORMAT_RGBA8)  # some renderers output an HDR format
+	img.save_png(path)
 	print("SCREENSHOT ", path)
 	get_tree().quit()
 
