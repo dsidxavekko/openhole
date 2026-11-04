@@ -48,14 +48,6 @@ func _ready() -> void:
 	add_child(_root)
 	UiTheme.apply_safe_area(_root)
 
-	# Soft darkening at the screen edges, under all the HUD elements.
-	var vig := TextureRect.new()
-	vig.texture = _vignette_texture()
-	vig.stretch_mode = TextureRect.STRETCH_SCALE
-	vig.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vig.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(vig)
-
 	_pointers = PointerLayer.new()
 	_root.add_child(_pointers)
 
@@ -235,21 +227,6 @@ func set_shift(ready: bool, cooldown_left: float, active: bool, active_left: flo
 func flash(color: Color) -> void:
 	_flash.color = Color(color, 0.35)
 	create_tween().tween_property(_flash, "color:a", 0.0, 0.35)
-
-
-## Soft radial darkening at the screen edges.
-func _vignette_texture() -> GradientTexture2D:
-	var g := Gradient.new()
-	g.offsets = PackedFloat32Array([0.0, 0.62, 1.0])
-	g.colors = PackedColorArray([Color(0, 0, 0, 0), Color(0, 0, 0, 0.06), Color(0, 0, 0, 0.3)])
-	var t := GradientTexture2D.new()
-	t.gradient = g
-	t.fill = GradientTexture2D.FILL_RADIAL
-	t.fill_from = Vector2(0.5, 0.5)
-	t.fill_to = Vector2(0.5, 0.0)
-	t.width = 360
-	t.height = 640
-	return t
 
 
 ## Dimmed full-screen layer with a centred panel; the panel's VBox is in meta "box".
