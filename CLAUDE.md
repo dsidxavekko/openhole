@@ -23,7 +23,7 @@ make serve-web            # http://127.0.0.1:8000 — wasm не працює з 
 make apk / make install   # Android-збірка і встановлення через adb (лише за командою)
 # macOS: SDK = Homebrew android-commandlinetools, JDK = openjdk@21, keystore = ~/.android/debug.keystore (Makefile знаходить їх сам)
 godot --path . --rendering-driver opengl3 -- --screenshot=menu.png   # скріншот
-godot --path . --rendering-driver opengl3 -- --autoplay --mode=classic --screenshot=s.png --shot-delay=18 --shot-shift --lang=en   # кадр матчу з Shift; --lang міняє мову без збереження
+godot --path . --rendering-driver opengl3 -- --autoplay --mode=classic --screenshot=s.png --shot-delay=18 --shot-shift --lang=en   # кадр матчу з Shift; --lang міняє мову без збереження, --theme=city|suburb|night — тему
 ```
 - На macOS Godot стоїть через Homebrew (`/opt/homebrew/bin/godot`). Makefile сам бере `~/.local/opt/godot/godot`, а якщо його немає — `godot` з PATH. Шлях можна перевизначити: `make GODOT=...`.
 - Окремий тест запустити не можна: усі перевірки — це послідовні виклики `_check(cond, "what")` у `_init()` файлу `tests/run_tests.gd`. Під нову фічу додавай новий блок `print("Name")` + `_check(...)`. Тест пройшов, якщо в кінці виведено `ALL PASSED`.
@@ -40,6 +40,8 @@ godot --path . --rendering-driver opengl3 -- --autoplay --mode=classic --screens
 - **UI**: `Hud` (CanvasLayer, увесь UI з коду, стилі в `UiTheme`) спілкується з `Game` сигналами (`play_again`, `to_menu`, `resume`). `FloatingJoystick` ігнорує тачі по контролах зі списку `joystick.blockers` — сюди треба додавати кожну нову кнопку HUD.
 - **Shift** (механіка для Game Off 2026): `Powerup.Kind.SHIFT` живе в `Hole.effects`, але ніколи не спавниться (у `WEIGHTS` його немає). Числа задані в `HoleRules` (`SHIFT_*`, `can_shift_eat`). `Hole.has_effect()` для інших бонусів повертає false, поки дірка shifted, тобто вони на паузі; підбирати пауерапи shifted дірка теж не може. Перевірку «чи можна з'їсти» роби через `Hole.can_be_eaten()`, а не через SHIELD напряму. Кнопка в HUD шле сигнал `shift_pressed` → `Game._player_shift()`, клавіша — дія `shift_button`. Shift-кіл гравця дає короткий slow-mo (`Game._shift_kill_slowmo`); усі кіли дір і виходи з зони йдуть у kill feed (`Hud.feed`); Shift-кіли гравця пишуться в лічильник `shift_kills` (Save), він відкриває скін SKIN_PHASE.
 - **Пауерапи** (`scripts/world/powerup.gd`): `Kind`, `DURATIONS`, `COLORS`, `NAMES` (ключі i18n) і `WEIGHTS` (ймовірність спавну; у Solo SHIELD не спавниться).
+- **Графіка тем**: палітра неба/туману/світла — `_build_environment`, землі — `_build_ground` у `game.gd`, за `MapTheme.CITY/SUBURB/NIGHT`. Ніч увімкає `night`-uniform у `ground.gdshader` (теплі «басейни» фонарів, glow розмітки) і шейдер фасадів `scripts/world/building_night.gdshader`: `EdibleFactory._apply_facade` міняє поверхневі матеріали спільних mesh-ресурсів — операція оборотна, оригінали віддає `ModelLibrary.original_materials()`. Night тримає міську розмітку (`_spawn_city` мапить night → city). Dev-прапорець `--theme=city|suburb|night` не зберігається.
+- **Звук**: `Sfx` глушиться в dev-запусках з editor-бінаря (`OS.has_feature("editor")` у `GameState.apply_volume`); exported-білди — включно з debug-signed APK для Releases — грають нормально.
 
 ## Платформи
 - Рендер `mobile`, фізика Jolt, 60 тіків. `export_presets.cfg` містить пресети Android (arm64-v8a, пакет `org.openhole.game`) і Web.
