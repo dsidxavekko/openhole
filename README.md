@@ -43,8 +43,7 @@ Power-ups: magnet, speed, giant (+2 levels for a while), shield (cannot be eaten
 They pause while you are shifted.
 Eating things quickly in a row builds a combo (up to +50 % points).
 Skins for your hole unlock with records. Settings: sound, vibration, camera shake,
-FPS counter, bot skill and count, map theme (day city, warm suburb or night
-with lit windows) and seed.
+FPS counter, bot skill and count, map theme (day city, warm suburb or night) and seed.
 
 Buildings, buses, rocks and big trees break into chunks and collapse into the hole.
 A hole too small for a skyscraper can still bite chunks off it.
