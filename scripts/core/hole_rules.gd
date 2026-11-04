@@ -96,3 +96,16 @@ static func can_shift_eat(shifted_r: float, target_r: float, dist: float) -> boo
 ## Room for future limits (e.g. a minimum level); every level can shift for now.
 static func can_be_shifted(_level: int) -> bool:
 	return true
+
+
+# --- Bot Shift (hard bots only) ----------------------------------------------
+
+## How close a hole that could eat us must be before a bot shifts to escape.
+static func shift_escape_reach(radius: float) -> float:
+	return 2.0 + radius * 1.5
+
+
+## Whether a bot should spend its Shift diving into a bigger hole: the victim
+## must be too big to eat the usual way and reachable during the short Shift.
+static func can_shift_dive(me_r: float, target_r: float, dist: float) -> bool:
+	return target_r > me_r * EAT_HOLE_RATIO and dist < 9.0 + target_r * 1.5

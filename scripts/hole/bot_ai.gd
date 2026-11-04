@@ -21,13 +21,19 @@ var _chase_cooldown := 0.0
 var _no_chase_start := 15.0
 ## Seconds left standing still in surprise (the player just shifted nearby).
 var _frozen := 0.0
+## Hole this bot is diving into while shifted (hard bots only).
+var _shift_target: Hole = null
+## Hard bots may spend their Shift.
+var allow_shift := false
 
 
-func _init(p_hole: Hole, p_game: Node, p_skill: float, p_chase_start := 15.0) -> void:
+func _init(p_hole: Hole, p_game: Node, p_skill: float, p_chase_start := 15.0,
+		p_allow_shift := false) -> void:
 	hole = p_hole
 	game = p_game
 	skill = p_skill
 	_no_chase_start = p_chase_start
+	allow_shift = p_allow_shift
 	target = hole.position
 
 
@@ -48,6 +54,8 @@ func update(delta: float) -> void:
 		return
 	_age += delta
 	_chase_cooldown -= delta
+	if allow_shift:
+		_maybe_shift()
 	if state == State.CHASE:
 		_chase_time += delta
 		if _chase_time > CHASE_LIMIT:
@@ -73,6 +81,12 @@ func update(delta: float) -> void:
 
 func _decide() -> void:
 	var r := hole.radius
+	if hole.is_shifted() and is_instance_valid(_shift_target) and _shift_target.alive:
+		# Committed to the dive: run at the victim while the shift lasts.
+		state = State.CHASE
+		target = _shift_target.position
+		return
+	_shift_target = null
 	var threat: Hole = game.find_threat(hole, 5.0 + r * 3.0 * skill)
 	if threat:
 		state = State.FLEE
@@ -95,3 +109,31 @@ func _decide() -> void:
 		state = State.WANDER
 		var a := randf() * TAU
 		target = game.clamp_to_play_area(hole.position + Vector3(cos(a), 0, sin(a)) * 20.0)
+
+
+## Hard bots shift too: slip away from a bigger hole, or dive into one head-first.
+func _maybe_shift() -> void:
+	if not hole.shift_ready():
+		return
+	# Escape: something that could eat us is right here.
+	var threat: Hole = game.find_threat(hole, HoleRules.shift_escape_reach(hole.radius))
+	if threat and randf() < skill:
+		hole.start_shift()
+		game.bot_shifted(hole)
+		return
+	if _age <= _no_chase_start or _chase_cooldown > 0.0:
+		return
+	# Assassinate: the closest hole that is too big to eat the usual way.
+	var victim: Hole = null
+	var best_d := INF
+	for o in game.holes:
+		if o == hole or not o.alive:
+			continue
+		var d: float = o.position.distance_to(hole.position)
+		if o.can_be_eaten() and HoleRules.can_shift_dive(hole.radius, o.radius, d) and d < best_d:
+			best_d = d
+			victim = o
+	if victim and randf() < skill * 0.7:
+		_shift_target = victim
+		hole.start_shift()
+		game.bot_shifted(hole)

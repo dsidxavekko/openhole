@@ -286,7 +286,8 @@ func _spawn_holes() -> void:
 			if GameState.autoplay or attract:
 				_player_bot = BotAI.new(h, self, 0.8)
 		else:
-			h.controller = BotAI.new(h, self, randf_range(skill.x, skill.y), GameState.bot_chase_start())
+			h.controller = BotAI.new(h, self, randf_range(skill.x, skill.y),
+				GameState.bot_chase_start(), GameState.difficulty == GameState.Difficulty.HARD)
 		holes.append(h)
 
 
@@ -483,6 +484,9 @@ func _update_pointers() -> void:
 			if not o.can_be_eaten():
 				continue
 			c = Color("80ed99")
+		elif o.is_shifted():
+			# A shifted bot can dive into any hole: always a threat.
+			c = Color("ff4d6d")
 		elif o.radius > player.radius * HoleRules.EAT_HOLE_RATIO:
 			c = Color("ff4d6d")
 		elif player.radius > o.radius * HoleRules.EAT_HOLE_RATIO:
@@ -943,12 +947,24 @@ func _player_shift() -> void:
 	GameState.vibrate(60)
 	_add_shake(0.3)
 	Sfx.play("shift")
-	_shift_wave(player)
+	_shift_fx(player)
+
+
+## The world-side Shift effects: the ring wave and nearby bots freezing.
+func _shift_fx(h: Hole) -> void:
+	_shift_wave(h)
 	# Bots close by freeze for a moment in surprise, then run.
-	for h in holes:
-		if h != player and h.alive and h.controller is BotAI \
-				and h.position.distance_to(player.position) < SHIFT_FREEZE_REACH + h.radius:
-			(h.controller as BotAI).freeze(SHIFT_FREEZE)
+	for o in holes:
+		if o != h and o.alive and o.controller is BotAI \
+				and o.position.distance_to(h.position) < SHIFT_FREEZE_REACH + o.radius:
+			(o.controller as BotAI).freeze(SHIFT_FREEZE)
+
+
+## A bot used its Shift: the same world effects, no HUD.
+func bot_shifted(h: Hole) -> void:
+	_shift_fx(h)
+	if not attract and h.position.distance_to(player.position) < 45.0 + player.radius * 4.0:
+		Sfx.play("shift")
 
 
 ## Smoke runs: the bot-driven player shifts when a hole it could dive into is close.
@@ -1317,11 +1333,14 @@ func _finish() -> void:
 	Sfx.play("end")
 	hud.show_results(title, lines)
 	var all_powerups := 0
+	var bot_shifts := 0
 	for h in holes:
 		all_powerups += h.powerups_taken
-	print("MATCH_END mode=%s points=%d eaten=%d/%d level=%d powerups=%d/%d movers_left=%d flung=%d best_item=%d fractured=%d debris_peak=%d frame_ms=%.2f shifts=%d shift_eats=%d" % [key,
+		if h != player:
+			bot_shifts += h.shifts_used
+	print("MATCH_END mode=%s points=%d eaten=%d/%d level=%d powerups=%d/%d movers_left=%d flung=%d best_item=%d fractured=%d debris_peak=%d frame_ms=%.2f shifts=%d shift_eats=%d bot_shifts=%d" % [key,
 		player.points, eaten_count, total_count, player.level, player.powerups_taken, all_powerups, movers.size(),
 		_flung.size(), _best_item, demolition.fractured, demolition.debris_peak, _frame_ms_sum / maxf(_frames, 1),
-		player.shifts_used, player.holes_eaten_shifted])
+		player.shifts_used, player.holes_eaten_shifted, bot_shifts])
 	if GameState.autoplay:
 		get_tree().quit()

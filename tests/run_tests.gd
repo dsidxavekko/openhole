@@ -121,6 +121,13 @@ func _init() -> void:
 	_check(not hole.can_be_eaten(), "shield still protects")
 	hole.free()
 
+	print("Bot shift rules")
+	_check(HoleRules.shift_escape_reach(2.0) > HoleRules.shift_escape_reach(1.0),
+		"bigger holes keep a wider escape berth")
+	_check(HoleRules.can_shift_dive(1.0, 3.0, 12.0), "a bot dives at a bigger hole it can reach")
+	_check(not HoleRules.can_shift_dive(1.0, 3.0, 60.0), "a far bigger hole is not worth the dive")
+	_check(not HoleRules.can_shift_dive(4.0, 4.5, 1.0), "no dive at a hole it could eat the usual way")
+
 	print("CityGen")
 	var a := CityGen.generate(42, 5, 0)
 	var b := CityGen.generate(42, 5, 0)

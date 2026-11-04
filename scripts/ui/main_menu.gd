@@ -23,6 +23,9 @@ func _ready() -> void:
 			if a.begins_with("--seed="):
 				GameState.random_seed = false
 				GameState.map_seed = a.trim_prefix("--seed=").to_int()
+			if a.begins_with("--difficulty="):
+				var d := a.trim_prefix("--difficulty=").to_lower()
+				GameState.difficulty = clampi(["easy", "normal", "hard"].find(d), 0, 2)
 		GameState.daily = m == "daily"
 		GameState.mode = GameState.Mode.SOLO if GameState.daily else maxi(GameState.MODE_KEYS.find(m), 0)
 		var scr: Script = load("res://scripts/game.gd")
