@@ -2,8 +2,11 @@ extends Node
 ## Match settings shared between the menu and the game scene, plus player options.
 
 enum Mode { CLASSIC, SOLO, BATTLE }
-enum MapTheme { CITY, SUBURB }
+enum MapTheme { CITY, SUBURB, NIGHT }
 enum Difficulty { EASY, NORMAL, HARD }
+
+## tr() keys per MapTheme value, in order.
+const THEME_KEYS := ["THEME_CITY", "THEME_SUBURB", "THEME_NIGHT"]
 
 const MODE_KEYS := ["classic", "solo", "battle"]
 const DIFFICULTY_KEYS := ["DIFF_EASY", "DIFF_NORMAL", "DIFF_HARD"]
@@ -42,7 +45,11 @@ func _ready() -> void:
 		if arg.begins_with("--lang="):
 			lang = arg.trim_prefix("--lang=")
 	TranslationServer.set_locale(lang)
-	map_theme = Save.get_setting("theme", MapTheme.CITY)
+	map_theme = clampi(Save.get_setting("theme", MapTheme.CITY), 0, THEME_KEYS.size() - 1)
+	# Dev helper for screenshots: "-- --theme=city|suburb|night" overrides the theme without saving.
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--theme="):
+			map_theme = clampi(["city", "suburb", "night"].find(arg.trim_prefix("--theme=").to_lower()), 0, 2)
 	bot_count = clampi(Save.get_setting("bots", 7), MIN_BOTS, MAX_BOTS)
 	difficulty = clampi(Save.get_setting("difficulty", Difficulty.NORMAL), 0, 2)
 	vibration = Save.get_setting("vibration", true)
@@ -74,7 +81,9 @@ func set_option(key: String, save_key: String, value: Variant) -> void:
 
 func apply_volume() -> void:
 	var bus := AudioServer.get_bus_index("Master")
-	AudioServer.set_bus_mute(bus, volume <= 0.01)
+	# Dev runs from the editor binary are silent; exported builds (even
+	# debug-signed ones) keep sound.
+	AudioServer.set_bus_mute(bus, volume <= 0.01 or OS.has_feature("editor"))
 	AudioServer.set_bus_volume_db(bus, linear_to_db(maxf(volume, 0.01)))
 
 
