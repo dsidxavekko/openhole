@@ -46,8 +46,9 @@ func _build() -> void:
 		func(dir: int): GameState.set_option("bot_count", "bots",
 			clampi(GameState.bot_count + dir, GameState.MIN_BOTS, GameState.MAX_BOTS))))
 	_row(tr("MAP_THEME"), _cycler(
-		func(): return tr("THEME_CITY" if GameState.map_theme == GameState.MapTheme.CITY else "THEME_SUBURB"),
-		func(_dir: int): GameState.set_option("map_theme", "theme", 1 - GameState.map_theme)))
+		func(): return tr(GameState.THEME_KEYS[GameState.map_theme]),
+		func(_dir: int): GameState.set_option("map_theme", "theme",
+			(GameState.map_theme + 1) % GameState.THEME_KEYS.size())))
 
 	var seed_edit := LineEdit.new()
 	seed_edit.text = str(GameState.map_seed)

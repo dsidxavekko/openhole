@@ -104,16 +104,16 @@ vec4 city_color(vec2 p) {
 
 	// Night: warm pools of light under the street lamps along every road.
 	if (night > 0.5) {
-		float dv = abs(mod(p.y + 7.0, 14.0) - 7.0);
+		float dv = abs(mod(p.y + 8.0, 16.0) - 8.0);
 		float kv = min(abs(m.x), abs(m.x - road));
 		float mv = 1.0 - band(m.x, road + sidewalk, pitch - sidewalk, w.x);
-		float dh = abs(mod(p.x + 7.0, 14.0) - 7.0);
+		float dh = abs(mod(p.x + 8.0, 16.0) - 8.0);
 		float kh = min(abs(m.y), abs(m.y - road));
 		float mhn = 1.0 - band(m.y, road + sidewalk, pitch - sidewalk, w.y);
-		float pools = mv * exp(-dv * dv / 14.0) * exp(-(kv - 1.3) * (kv - 1.3) / 6.0)
-			+ mhn * exp(-dh * dh / 14.0) * exp(-(kh - 1.3) * (kh - 1.3) / 6.0);
-		road_col += vec3(1.0, 0.72, 0.35) * pools * 0.5;
-		block_col += vec3(1.0, 0.72, 0.35) * pools * 0.3;
+		float pools = mv * exp(-dv * dv / 18.0) * exp(-(kv - 1.3) * (kv - 1.3) / 7.0)
+			+ mhn * exp(-dh * dh / 18.0) * exp(-(kh - 1.3) * (kh - 1.3) / 7.0);
+		road_col += vec3(1.0, 0.72, 0.35) * pools * 0.75;
+		block_col += vec3(1.0, 0.72, 0.35) * pools * 0.45;
 	}
 
 	vec3 col = mix(block_col, road_col, is_road);
@@ -188,5 +188,5 @@ void fragment() {
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.0;
 	// Markings glow faintly at night.
-	EMISSION = vec3(1.0, 0.85, 0.55) * city.a * 0.5 * night;
+	EMISSION = vec3(1.0, 0.85, 0.55) * city.a * 0.6 * night;
 }
