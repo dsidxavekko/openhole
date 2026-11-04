@@ -77,3 +77,5 @@ SHIFT_EAT,Shifted! You ate %s,Зсув! Ти з'їв %s
 FEED_EAT,%s ate %s,%s з'їв %s
 FEED_SHIFT,%s shift-ate %s,%s на Зсуві з'їв %s
 FEED_ZONE,%s faded outside the zone,%s розтанув поза зоною
+SHIFT_USED,Shifts used: %d,Використано Зсувів: %d
+SHIFT_KILLS,Holes eaten in Shift: %d,Дір з'їдено на Зсуві: %d

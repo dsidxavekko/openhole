@@ -1238,6 +1238,14 @@ func _percent() -> float:
 	return 100.0 * eaten_count / maxf(total_count, 1)
 
 
+## Shift summary for the results screen (it only matters against other holes).
+func _append_shift_stats(lines: Array) -> void:
+	if player.shifts_used > 0:
+		lines.append(tr("SHIFT_USED") % player.shifts_used)
+		if player.holes_eaten_shifted > 0:
+			lines.append(tr("SHIFT_KILLS") % player.holes_eaten_shifted)
+
+
 # --- End of match ----------------------------------------------------------
 
 func _check_end() -> void:
@@ -1277,6 +1285,7 @@ func _finish() -> void:
 			var place := _ranking().find(player) + 1
 			title = tr("YOU_WIN") if place == 1 else tr("PLACE") % place
 			lines.append(tr("POINTS") % player.points)
+			_append_shift_stats(lines)
 			if save:
 				record = Save.submit_record(key, player.points)
 		GameState.Mode.BATTLE:
@@ -1289,6 +1298,7 @@ func _finish() -> void:
 				place = _alive_count() + 1
 			title = tr("YOU_WIN") if place == 1 else tr("PLACE") % place
 			lines.append(tr("POINTS") % player.points)
+			_append_shift_stats(lines)
 			if save:
 				if place == 1:
 					Save.add_counter("battle_wins")
