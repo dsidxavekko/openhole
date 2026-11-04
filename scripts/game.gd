@@ -724,7 +724,7 @@ func _powerup_step(delta: float) -> void:
 	for i in range(powerups.size() - 1, -1, -1):
 		var p := powerups[i]
 		for h in holes:
-			if not h.alive:
+			if not h.alive or h.is_shifted():
 				continue
 			if Vector2(h.position.x - p.position.x, h.position.z - p.position.z).length() < h.radius + 1.0:
 				h.give_effect(p.kind, Powerup.DURATIONS[p.kind])
