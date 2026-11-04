@@ -1029,6 +1029,7 @@ func _eat_hole(a: Hole, b: Hole) -> void:
 		a.holes_eaten_shifted += 1
 	a.add_points(maxi(5, b.points / 2))
 	b.set_alive(false)
+	hud.feed(tr("FEED_SHIFT" if shifted else "FEED_EAT") % [a.hole_name, b.hole_name], a.color)
 	if _me(a):
 		hud.notice(tr("SHIFT_EAT" if shifted else "ATE_HOLE") % b.hole_name, 1.5)
 		GameState.vibrate(80)
@@ -1081,6 +1082,7 @@ func _zone_step(delta: float) -> void:
 				hud.notice(tr("ZONE_WARNING"), 0.6)
 			if h.out_of_zone > ZONE_OUT_LIMIT:
 				h.set_alive(false)
+				hud.feed(tr("FEED_ZONE") % h.hole_name, h.color)
 				if h == player:
 					hud.notice(tr("ELIMINATED"), 3.0)
 					Sfx.play("eaten")

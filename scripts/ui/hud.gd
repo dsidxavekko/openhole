@@ -26,6 +26,7 @@ var _pause: Control
 var _pause_box: VBoxContainer
 var _pause_button: Button
 var _pointers: PointerLayer
+var _feed_box: VBoxContainer
 var _notice_time := 0.0
 var _fps: Label
 var _last_combo := 0
@@ -110,6 +111,15 @@ func _ready() -> void:
 	_info_label.position = Vector2(-280, 120)
 	_info_label.custom_minimum_size = Vector2(260, 0)
 	_root.add_child(_info_label)
+
+	# Kill feed: the last hole-vs-hole events, right under the info label.
+	_feed_box = VBoxContainer.new()
+	_feed_box.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_feed_box.position = Vector2(-300, 168)
+	_feed_box.custom_minimum_size = Vector2(284, 0)
+	_feed_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_feed_box.add_theme_constant_override("separation", 2)
+	_root.add_child(_feed_box)
 
 	_notice = UiTheme.label("", 42, HORIZONTAL_ALIGNMENT_CENTER, 800)
 	_notice.set_anchors_preset(Control.PRESET_CENTER)
@@ -279,6 +289,19 @@ func set_info(text: String) -> void:
 	_info_label.text = text
 
 
+## One short line in the kill feed (top-right), tinted with the killer's colour.
+func feed(text: String, color: Color) -> void:
+	var l := UiTheme.label(text, 20, HORIZONTAL_ALIGNMENT_LEFT, 600)
+	l.modulate = Color(color.lightened(0.35), 1.0)
+	_feed_box.add_child(l)
+	while _feed_box.get_child_count() > 4:
+		_feed_box.get_child(0).queue_free()
+	var tw := l.create_tween()
+	tw.tween_interval(3.0)
+	tw.tween_property(l, "modulate:a", 0.0, 0.6)
+	tw.tween_callback(l.queue_free)
+
+
 func set_board(rows: Array) -> void:
 	# rows: [{place, name, points, color, me}]
 	for i in BOARD_ROWS:
@@ -359,6 +382,8 @@ func show_results(title: String, lines: Array) -> void:
 	_shift_banner.text = ""
 	_notice.text = ""
 	_combo_label.text = ""
+	for c in _feed_box.get_children():
+		c.queue_free()
 	_pointers.pointers = []
 	_pointers.queue_redraw()
 	for c in _results_box.get_children():

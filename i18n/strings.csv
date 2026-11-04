@@ -74,3 +74,6 @@ SKIN_RAINBOW,Rainbow,Веселка
 PU_SHIFT,Shift,Зсув
 SHIFT_ACTIVE,Roles swapped!,Ролі змінилися!
 SHIFT_EAT,Shifted! You ate %s,Зсув! Ти з'їв %s
+FEED_EAT,%s ate %s,%s з'їв %s
+FEED_SHIFT,%s shift-ate %s,%s на Зсуві з'їв %s
+FEED_ZONE,%s faded outside the zone,%s розтанув поза зоною
