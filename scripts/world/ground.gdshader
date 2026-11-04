@@ -1,6 +1,8 @@
 shader_type spatial;
 // Ground with procedural roads and circular cut-outs for every hole.
 // All edges are anti-aliased with fwidth() so nothing shimmers at a distance.
+// World-space math stays highp: the fragment default mediump on mobile GPUs
+// turns coordinates near the map edge into blotchy, wandering noise.
 
 const int MAX_HOLES = 16;
 
@@ -24,7 +26,7 @@ uniform float night = 0.0;
 // Battle zone: x, z, radius; radius <= 0 disables it.
 uniform vec3 zone = vec3(0.0, 0.0, 0.0);
 
-varying vec3 wpos;
+varying highp vec3 wpos;
 
 void vertex() {
 	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -35,22 +37,30 @@ float band(float x, float a, float b, float w) {
 	return smoothstep(a - w, a + w, x) * (1.0 - smoothstep(b - w, b + w, x));
 }
 
-float hash12(vec2 p) {
+// Highp through the whole hash: mediump fract() of values in the tens of
+// thousands collapses to garbage on mobile GPUs.
+float hash12(highp vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
 	p += dot(p, p + 45.32);
 	return fract(p.x * p.y);
 }
 
-float vnoise(vec2 p) {
-	vec2 i = floor(p);
-	vec2 f = fract(p);
+float vnoise(highp vec2 p) {
+	highp vec2 i = floor(p);
+	highp vec2 f = fract(p);
 	f = f * f * (3.0 - 2.0 * f);
 	return mix(mix(hash12(i), hash12(i + vec2(1.0, 0.0)), f.x),
 		mix(hash12(i + vec2(0.0, 1.0)), hash12(i + vec2(1.0, 1.0)), f.x), f.y);
 }
 
+// Smooth bump over +-r, pure ALU (no exp) for the mobile fragment budget.
+float bump(float x, float r) {
+	float t = clamp(1.0 - x * x / (r * r), 0.0, 1.0);
+	return t * t;
+}
+
 // rgb = surface colour, a = how strongly the markings should glow at night.
-vec4 city_color(vec2 p) {
+vec4 city_color(highp vec2 p) {
 	vec2 w = max(fwidth(p), vec2(0.001));
 	// Layout along each axis: road, block, road, block, ..., road.
 	vec2 m = mod(p + vec2(half_extent), pitch);
@@ -67,22 +77,23 @@ vec4 city_color(vec2 p) {
 	// Sidewalk: tile joints every 1.6 m.
 	vec3 walk_c = walk_color * (1.0 - 0.10 * max(step(0.93, fract(b.x * 0.625)),
 		step(0.93, fract(b.y * 0.625))));
-	// Grass: two-octave patchiness with occasional dirt spots.
-	float gn = vnoise(p * 0.33) * 0.6 + vnoise(p * 1.4) * 0.4;
+	// Grass: patchiness with occasional dirt spots.
+	float gn = vnoise(p * 0.5);
 	vec3 grass_c = grass_color * (0.84 + 0.32 * gn);
-	float dirt = step(0.92, hash12(floor(p / 5.0))) * (0.4 + 0.6 * vnoise(p * 2.0));
+	float dirt = step(0.92, hash12(floor(p / 5.0))) * clamp(gn * 1.4 - 0.2, 0.0, 1.0);
 	grass_c = mix(grass_c, grass_color * vec3(1.05, 0.82, 0.55), dirt * 0.55);
 	vec3 block_col = mix(walk_c, grass_c, grass);
 
 	// Asphalt: wear noise, sparse manholes and darker repair patches.
-	vec3 road_c = road_color * (0.9 + 0.18 * vnoise(p * 0.21));
+	float wear = vnoise(p * 0.21);
+	vec3 road_c = road_color * (0.9 + 0.18 * wear);
 	vec2 cell = floor(p / 7.0);
 	float mh = hash12(cell + 3.7);
 	vec2 mo = (vec2(hash12(cell + 1.3), hash12(cell + 2.6)) - 0.5) * 4.6;
 	float md = length(mod(p, 7.0) - 3.5 + mo);
 	road_c = mix(road_c, road_c * 0.45, step(0.8, mh) * smoothstep(0.85, 0.6, md));
 	float patch = step(0.86, hash12(floor(p / 11.0) + 9.1));
-	road_c *= 1.0 + patch * (vnoise(p * 0.8) - 0.5) * 0.14;
+	road_c *= 1.0 + patch * (wear - 0.5) * 0.16;
 
 	// Zebra bars on the four approaches of every crossing.
 	float zeb = rx * (band(m.y, 0.5, 2.1, w.y) + band(m.y, road - 2.1, road - 0.5, w.y))
@@ -106,12 +117,12 @@ vec4 city_color(vec2 p) {
 	if (night > 0.5) {
 		float dv = abs(mod(p.y + 8.0, 16.0) - 8.0);
 		float kv = min(abs(m.x), abs(m.x - road));
-		float mv = 1.0 - band(m.x, road + sidewalk, pitch - sidewalk, w.x);
+		float mv = max(step(m.x, road + sidewalk), step(pitch - sidewalk, m.x));
 		float dh = abs(mod(p.x + 8.0, 16.0) - 8.0);
 		float kh = min(abs(m.y), abs(m.y - road));
-		float mhn = 1.0 - band(m.y, road + sidewalk, pitch - sidewalk, w.y);
-		float pools = mv * exp(-dv * dv / 18.0) * exp(-(kv - 1.3) * (kv - 1.3) / 7.0)
-			+ mhn * exp(-dh * dh / 18.0) * exp(-(kh - 1.3) * (kh - 1.3) / 7.0);
+		float mhn = max(step(m.y, road + sidewalk), step(pitch - sidewalk, m.y));
+		float pools = mv * bump(dv, 4.4) * bump(kv - 1.3, 2.7)
+			+ mhn * bump(dh, 4.4) * bump(kh - 1.3, 2.7);
 		road_col += vec3(1.0, 0.72, 0.35) * pools * 0.75;
 		block_col += vec3(1.0, 0.72, 0.35) * pools * 0.45;
 	}
@@ -150,7 +161,7 @@ vec3 rim_color(vec3 c, int pattern, vec2 q, float u, float r) {
 }
 
 void fragment() {
-	vec2 p = wpos.xz;
+	highp vec2 p = wpos.xz;
 	vec4 city = city_color(p);
 	vec3 col = city.rgb;
 	for (int i = 0; i < MAX_HOLES; i++) {
