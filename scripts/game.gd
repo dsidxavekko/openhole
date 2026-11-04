@@ -916,6 +916,12 @@ func _rebin() -> void:
 			_grid_remove(e)
 			_grid_add(e)
 		if e.sleeping and e.falling_into == null:
+			if e.kind != "debris":
+				# A woken piece of the city settled back on the ground: freeze it
+				# again, like the rest of the city (debris are frozen by Demolition).
+				e.linear_velocity = Vector3.ZERO
+				e.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
+				e.freeze = true
 			awake.erase(e)
 
 
