@@ -27,6 +27,11 @@ Then 8 s of cooldown (ready again right after a respawn). Bots close by freeze f
 a moment in surprise and then run. Shift works in every mode; there is no separate
 mode for it.
 
+On Hard difficulty bots have their own Shift: they slip away from a bigger hole or
+dive into one. A Shift kill by the player gets a brief slow-motion close-up, and
+every hole-vs-hole event lands in the small kill feed. Shift kills also count
+towards the Phase skin.
+
 ## Modes
 - **Classic** — 2 minutes vs 7 bots, biggest hole wins. Eaten holes respawn.
 - **Solo** — alone, eat as much of the city as you can in 2 minutes.
