@@ -3,3 +3,4 @@ build/
 *.translation
 .claude/settings.local.json
 out/
+.DS_Store

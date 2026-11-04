@@ -24,7 +24,7 @@ func _ready() -> void:
 				GameState.random_seed = false
 				GameState.map_seed = a.trim_prefix("--seed=").to_int()
 		GameState.daily = m == "daily"
-		GameState.mode = GameState.Mode.SOLO if GameState.daily else GameState.MODE_KEYS.find(m)
+		GameState.mode = GameState.Mode.SOLO if GameState.daily else maxi(GameState.MODE_KEYS.find(m), 0)
 		var scr: Script = load("res://scripts/game.gd")
 		if scr == null or not scr.can_instantiate():
 			push_error("game.gd does not compile")

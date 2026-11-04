@@ -232,7 +232,7 @@ func _overlay() -> Control:
 
 
 func _process(delta: float) -> void:
-	_fps.visible = GameState.show_fps
+	_fps.visible = GameState.show_fps and not _results.visible
 	if _fps.visible:
 		_fps.text = "%d FPS" % Engine.get_frames_per_second()
 	if _notice_time > 0.0:
