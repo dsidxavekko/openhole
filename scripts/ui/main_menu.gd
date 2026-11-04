@@ -363,6 +363,16 @@ func _spacer(h: float) -> Control:
 func _start(m: int, daily: bool) -> void:
 	GameState.mode = m
 	GameState.daily = daily
+	if not GameState.autoplay:
+		# Fade out to black; the match scene fades back in.
+		var dim := ColorRect.new()
+		dim.color = Color(0, 0, 0, 0)
+		dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(dim)
+		var tw := create_tween()
+		tw.tween_property(dim, "color:a", 1.0, 0.22)
+		await tw.finished
 	var err := get_tree().change_scene_to_file(GAME_SCENE)
 	if err != OK and GameState.autoplay:
 		push_error("Game scene failed to load: %d" % err)

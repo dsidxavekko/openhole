@@ -396,7 +396,7 @@ func _make_dust() -> CPUParticles3D:
 	p.emitting = false
 	p.one_shot = true
 	p.explosiveness = 0.85
-	p.lifetime = 1.6
+	p.lifetime = 1.8
 	p.amount = 48
 	p.local_coords = false
 	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
@@ -456,8 +456,8 @@ func _puff(at: Vector3, radius: float, amount: int) -> void:
 	p.global_position = Vector3(at.x, maxf(at.y, 0.0) + 0.5, at.z)
 	p.emission_sphere_radius = maxf(radius * 0.5, 0.5)
 	p.amount = clampi(amount, 6, 64)
-	p.scale_amount_min = 0.6 + radius * 0.12
-	p.scale_amount_max = 1.2 + radius * 0.22
+	p.scale_amount_min = 0.8 + radius * 0.14
+	p.scale_amount_max = 1.5 + radius * 0.26
 	p.restart()
 	p.emitting = true
 

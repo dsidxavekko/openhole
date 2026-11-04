@@ -17,6 +17,7 @@ const POWERUP_COUNT := 6
 const POWERUP_RESPAWN := 18.0
 const ATTRACT_TIME := 90.0
 const POPUP_POOL := 12
+const BURST_POOL := 8
 ## Traffic light cycle: horizontal green, all red, vertical green, all red.
 const LIGHT_CYCLE := 16.0
 const GROUND_SHADER := preload("res://scripts/world/ground.gdshader")
@@ -64,6 +65,8 @@ var _orbit := 0.0
 var _shake := 0.0         # camera trauma 0..1
 var _popups: Array[Label3D] = []
 var _popup_next := 0
+var _bursts: Array[CPUParticles3D] = []
+var _burst_next := 0
 var _last_tick := -1
 var _best_item := 0
 var demolition: Demolition
@@ -101,6 +104,7 @@ func _ready() -> void:
 	if attract:
 		return
 
+	_make_bursts()
 	hud = Hud.new()
 	add_child(hud)
 	hud.play_again.connect(func():
@@ -843,6 +847,7 @@ func _falling_step() -> void:
 			continue
 		if off_hole and bottom > -0.1:
 			# Fully back on solid ground (the hole moved away): normal object again.
+			_scale_meshes(e, 1.0)
 			e.falling_into = null
 			e.collision_mask = GROUND_LAYER | EDIBLE_LAYER
 			e.gravity_scale = 1.0
@@ -852,6 +857,9 @@ func _falling_step() -> void:
 			# count it as eaten instead of popping it back up through the asphalt.
 			falling.remove_at(i)
 			_eat(e, h)
+		else:
+			# Still going down: the visible meshes shrink a little as it sinks.
+			_scale_meshes(e, 1.0 - 0.4 * clampf(-bottom / maxf(e.height * 1.5, 2.5), 0.0, 1.0))
 
 
 func _eat(e: Edible, h: Hole) -> void:
@@ -889,6 +897,7 @@ func _eat_feedback(e: Edible, h: Hole, gained: int) -> void:
 		return
 	# Small things sound high, big things low.
 	var big := e.points >= 40
+	_eat_burst(e.position, h.color, e.extent)
 	var pitch := clampf(1.6 - log(float(e.points) + 1.0) * 0.18, 0.55, 1.6) * randf_range(0.93, 1.07)
 	Sfx.play("gulp_big" if big else "gulp", pitch, -4.0 if e.points < 3 else 0.0, 0 if big else 45)
 	if _vibrate_cooldown <= 0.0 and e.points >= 5:
@@ -944,6 +953,58 @@ func _tick_sound() -> void:
 	if s <= 10 and s > 0 and s != _last_tick:
 		_last_tick = s
 		Sfx.play("tick", 1.0 if s > 3 else 1.3)
+
+
+## Pool of one-shot particle bursts, tinted with the eater's colour.
+func _make_bursts() -> void:
+	for i in BURST_POOL:
+		var p := CPUParticles3D.new()
+		p.emitting = false
+		p.one_shot = true
+		p.explosiveness = 1.0
+		p.lifetime = 0.55
+		p.amount = 14
+		p.local_coords = false
+		p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+		p.emission_sphere_radius = 0.7
+		p.direction = Vector3.UP
+		p.spread = 85.0
+		p.gravity = Vector3(0, -7, 0)
+		p.initial_velocity_min = 2.0
+		p.initial_velocity_max = 4.5
+		p.scale_amount_min = 0.5
+		p.scale_amount_max = 1.1
+		var quad := QuadMesh.new()
+		quad.size = Vector2.ONE * 0.26
+		var m := StandardMaterial3D.new()
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.vertex_color_use_as_albedo = true
+		m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		quad.material = m
+		p.mesh = quad
+		p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		p.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+		add_child(p)
+		_bursts.append(p)
+
+
+func _eat_burst(at: Vector3, color: Color, size: float) -> void:
+	var p := _bursts[_burst_next]
+	_burst_next = (_burst_next + 1) % _bursts.size()
+	p.color = color.lightened(0.3)
+	p.global_position = at + Vector3(0, 0.3, 0)
+	p.amount = clampi(int(size * 6.0), 8, 18)
+	p.restart()
+	p.emitting = true
+
+
+## Scales the visible meshes of a falling object (colliders stay untouched).
+func _scale_meshes(e: Edible, k: float) -> void:
+	for c in e.get_children():
+		if c is Node3D and not (c is CollisionShape3D):
+			if not c.has_meta("base_scale"):
+				c.set_meta("base_scale", c.scale)
+			c.scale = (c.get_meta("base_scale") as Vector3) * k
 
 
 func _rebin() -> void:
