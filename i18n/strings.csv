@@ -10,11 +10,6 @@ THEME_CITY,City,Місто
 THEME_SUBURB,Suburb,Передмістя
 RANDOM_MAP,Random map,Випадкова мапа
 SEED,Seed,Seed
-LANGUAGE,Language: English,Мова: Українська
-RECORDS,Records,Рекорди
-RECORD_CLASSIC,Classic: %d pts,Класика: %d очок
-RECORD_SOLO,Solo: %.1f%% of the city,Соло: %.1f%% міста
-RECORD_BATTLE,Battle: %d wins / best %d pts,Битва: %d перемог / найкраще %d очок
 YOU,You,Ти
 LEVEL,Level %d,Рівень %d
 LEVEL_UP,Level %d!,Рівень %d!
@@ -78,6 +73,4 @@ SKIN_GOLD,Gold,Золото
 SKIN_RAINBOW,Rainbow,Веселка
 PU_SHIFT,Shift,Зсув
 SHIFT_ACTIVE,Roles swapped!,Ролі змінилися!
-SHIFT_READY,Shift ready,Зсув готовий
 SHIFT_EAT,Shifted! You ate %s,Зсув! Ти з'їв %s
-SHIFT_COOLDOWN,Shift in %ds,Зсув через %dс
