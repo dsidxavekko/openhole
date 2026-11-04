@@ -1324,6 +1324,8 @@ func _finish() -> void:
 	lines.append(tr("EATEN_COUNT") % eaten_count)
 	if save:
 		Save.add_counter("total_eaten", eaten_count)
+		if player.holes_eaten_shifted > 0:
+			Save.add_counter("shift_kills", player.holes_eaten_shifted)
 		var before := Skins.unlocked_set(stats_before)
 		for i in Skins.unlocked_set(Skins.current_stats()):
 			if not before.has(i):

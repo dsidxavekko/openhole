@@ -16,6 +16,7 @@ const LIST := [
 	{"name": "SKIN_ICE", "color": Color("caf0f8"), "pattern": Pattern.SHIMMER, "need": ["solo", 15]},
 	{"name": "SKIN_RUBY", "color": Color("e63946"), "pattern": Pattern.PULSE, "need": ["battle_wins", 1]},
 	{"name": "SKIN_GOLD", "color": Color("ffc300"), "pattern": Pattern.SHIMMER, "need": ["battle_wins", 5]},
+	{"name": "SKIN_PHASE", "color": Color("e0aaff"), "pattern": Pattern.PULSE, "need": ["shift_kills", 3]},
 	{"name": "SKIN_RAINBOW", "color": Color("ffffff"), "pattern": Pattern.RAINBOW, "need": ["total_eaten", 5000]},
 ]
 
@@ -25,6 +26,7 @@ const NEED_TEXT := {
 	"solo": "NEED_SOLO",
 	"battle_wins": "NEED_BATTLE_WINS",
 	"total_eaten": "NEED_EATEN",
+	"shift_kills": "NEED_SHIFT_KILLS",
 }
 
 

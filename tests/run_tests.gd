@@ -59,8 +59,15 @@ func _init() -> void:
 	print("Skins")
 	_check(Skins.unlocked_with({}, 0) and Skins.unlocked_with({}, 1), "first skins are free")
 	_check(not Skins.unlocked_with({}, Skins.count() - 1), "last skin starts locked")
-	var all := {"classic": 1e9, "solo": 100, "battle_wins": 1e9, "total_eaten": 1e9}
+	var all := {"classic": 1e9, "solo": 100, "battle_wins": 1e9, "total_eaten": 1e9, "shift_kills": 1e9}
 	_check(Skins.unlocked_set(all).size() == Skins.count(), "every skin can be unlocked")
+	var phase := -1
+	for i in Skins.count():
+		if Skins.get_skin(i).name == "SKIN_PHASE":
+			phase = i
+	_check(phase >= 0, "the shift-kill skin exists")
+	_check(not Skins.unlocked_with({}, phase), "the shift-kill skin starts locked")
+	_check(Skins.unlocked_with({"shift_kills": 3}, phase), "three shift kills unlock the skin")
 	var patterns_ok := true
 	for i in Skins.count():
 		if Skins.get_skin(i).pattern < 0 or Skins.get_skin(i).pattern > Skins.Pattern.SHIMMER:

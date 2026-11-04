@@ -61,6 +61,7 @@ NEED_CLASSIC,Classic: %d points,Класика: %d очок
 NEED_SOLO,Solo: %d%% of the city,Соло: %d%% міста
 NEED_BATTLE_WINS,Battle wins: %d,Перемог у Битві: %d
 NEED_EATEN,Eat %d things in total,З'їж загалом %d предметів
+NEED_SHIFT_KILLS,Shift kills: %d,Кіл на Зсуві: %d
 SKIN_SKY,Sky,Небо
 SKIN_ROSE,Rose,Троянда
 SKIN_LIME,Lime,Лайм
@@ -70,6 +71,7 @@ SKIN_TIGER,Tiger,Тигр
 SKIN_ICE,Ice,Лід
 SKIN_RUBY,Ruby,Рубін
 SKIN_GOLD,Gold,Золото
+SKIN_PHASE,Phase,Фаза
 SKIN_RAINBOW,Rainbow,Веселка
 PU_SHIFT,Shift,Зсув
 SHIFT_ACTIVE,Roles swapped!,Ролі змінилися!
