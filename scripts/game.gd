@@ -301,9 +301,7 @@ func _spawn_point(i: int, count: int) -> Vector3:
 	var a := TAU * i / count + randf() * 0.3
 	var r := bound * 0.6
 	var p := Vector3(cos(a) * r, 0, sin(a) * r)
-	var half := half_extent
-	var road_z: float = round((p.z + half - CityGen.ROAD / 2.0) / CityGen.PITCH) * CityGen.PITCH - half + CityGen.ROAD / 2.0
-	p.z = road_z
+	p.z = _road_line(p.z)
 	return p
 
 
@@ -691,18 +689,30 @@ func _traffic_step(delta: float) -> void:
 # --- Powerups --------------------------------------------------------------
 
 func _spawn_powerup() -> void:
-	var blocks := _blocks()
 	var p := Powerup.new()
 	p.kind = Powerup.random_kind(mode != GameState.Mode.SOLO)
 	world.add_child(p)
-	for attempt in 6:
+	if mode == GameState.Mode.BATTLE:
+		# The zone gets tiny: spawn inside it, or nobody can ever reach it.
+		var reach := minf(maxf(zone_radius - 10.0, 6.0), bound * 0.85)
+		var a := randf() * TAU
+		var v := Vector2(cos(a), sin(a)) * (randf() * reach)
+		# Prefer a road line, so it is not buried inside a building.
+		var snapped := Vector2(_road_line(v.x), _road_line(v.y))
+		var point := snapped if snapped.length() < zone_radius - 6.0 else v
+		p.position = Vector3(point.x, 1.6, point.y)
+	else:
+		var blocks := _blocks()
 		var road := -half_extent + CityGen.ROAD / 2.0 + randi_range(0, blocks) * CityGen.PITCH
 		var along := randf_range(-bound, bound) * 0.9
 		p.position = Vector3(along, 1.6, road) if randf() < 0.5 else Vector3(road, 1.6, along)
-		# Battle: only inside the zone, otherwise nobody can get it.
-		if mode != GameState.Mode.BATTLE or Vector2(p.position.x, p.position.z).length() < zone_radius - 8.0:
-			break
 	powerups.append(p)
+
+
+## Coordinate of the nearest road centre line along one axis.
+func _road_line(v: float) -> float:
+	return roundf((v + half_extent - CityGen.ROAD / 2.0) / CityGen.PITCH) * CityGen.PITCH \
+		- half_extent + CityGen.ROAD / 2.0
 
 
 func _powerup_step(delta: float) -> void:
