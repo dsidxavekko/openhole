@@ -929,6 +929,9 @@ func _rebin() -> void:
 
 const SHIFT_FREEZE := 1.0
 const SHIFT_FREEZE_REACH := 14.0
+## Kill moment: time scale and its length in real-time seconds.
+const SHIFT_KILL_SLOWMO := 0.3
+const SHIFT_KILL_SLOWMO_TIME := 0.4
 
 
 ## The player's role swap: small, fast, cannot be eaten, eats any hole it dives into.
@@ -957,6 +960,20 @@ func _autoplay_wants_shift() -> bool:
 				and o.position.distance_to(player.position) < o.radius + 10.0:
 			return true
 	return false
+
+
+## Brief slow motion with a zoom-in when the player's Shift swallows a hole.
+func _shift_kill_slowmo() -> void:
+	if GameState.autoplay or Engine.time_scale != 1.0:
+		return
+	Engine.time_scale = SHIFT_KILL_SLOWMO
+	var base_fov := camera.fov
+	var tw := create_tween()
+	tw.tween_property(camera, "fov", base_fov - 6.0, 0.08)
+	tw.tween_property(camera, "fov", base_fov, 0.3)
+	# Real-time timer: restores the clock even though the tree now runs slower.
+	get_tree().create_timer(SHIFT_KILL_SLOWMO_TIME, true, false, true).timeout.connect(
+		func(): Engine.time_scale = 1.0)
 
 
 ## A ring that runs out over the ground from the hole.
@@ -1018,6 +1035,8 @@ func _eat_hole(a: Hole, b: Hole) -> void:
 		Sfx.play("eat_hole")
 		_add_shake(0.6)
 		_popup(a, "+%d" % maxi(5, b.points / 2), Color("80ed99"))
+		if shifted:
+			_shift_kill_slowmo()
 	if _me(b):
 		Sfx.play("eaten")
 		GameState.vibrate(200)
