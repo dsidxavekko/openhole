@@ -4,3 +4,6 @@ build/
 .claude/settings.local.json
 out/
 .DS_Store
+CLAUDE.md
+.claude/
+OPENHOLE-SHIFT-PLAN.md
