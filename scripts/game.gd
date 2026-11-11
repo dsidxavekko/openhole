@@ -1215,9 +1215,9 @@ func clamp_to_play_area(p: Vector3) -> Vector3:
 func find_threat(me: Hole, reach: float) -> Hole:
 	if mode == GameState.Mode.SOLO:
 		return null
-	# A hole too big for the whole thing can still break it up and eat the chunks.
-	if me.can_be_eaten():
-		return null
+	# The bot's own shield or shift protects it from being eaten, but the bigger
+	# holes around it stay threats (it can still be pushed into the zone, or the
+	# shield can run out). So always look for something that is big enough.
 	var best: Hole = null
 	var best_d := reach
 	for o in holes:
