@@ -80,7 +80,9 @@ random planes and caps every cut; this runs on a worker thread when a match
 starts. `Demolition` (`scripts/world/demolition.gd`) swaps a breakable object for
 its chunks: all at once when it fits the hole, or frozen in place when only a
 chunk fits. Each chunk knows which chunks rest on it, so when the hole takes the
-ones underneath, the unsupported ones above come down.
+ones underneath, the unsupported ones above come down; chunks keep a fraction of
+the original object's `weight` so the "city eaten" percentage counts whole city
+objects no matter how often things were broken up.
 
 ## License
 Code: MIT (see `LICENSE`). 3D models: Kenney, CC0. Font: Rubik, SIL OFL 1.1.

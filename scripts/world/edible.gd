@@ -23,9 +23,11 @@ var breakable := false
 var model_path := ""
 var model_basis := Basis.IDENTITY
 var model_center := Vector3.ZERO
-## Chunks only: points of the whole thing they came from, the other chunks
-## this one holds up, and how many chunks still hold this one up.
+## Chunks only: points of the whole thing they came from, fraction of the
+## original city item (`weight`), the other chunks this one holds up, and how
+## many chunks still hold this one up.
 var whole_points := 0
+var weight := 1.0
 var supports: Array[Edible] = []
 var supporters := 0
 var grounded := true

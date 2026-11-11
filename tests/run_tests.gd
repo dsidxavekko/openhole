@@ -218,5 +218,45 @@ func _init() -> void:
 	_check(not DebrisRules.breakable_kind("person", Vector3.ONE), "people do not break")
 	_check(not DebrisRules.breakable_kind("tree", Vector3(2, 3, 2)), "small trees do not break")
 
+	# A chunk hanging high above another one must not be linked as resting on it.
+	var loose: Array[Edible] = []
+	var floor_chunk := Edible.new()
+	floor_chunk.position = Vector3(0, 0.5, 0)
+	floor_chunk.height = 1.0
+	floor_chunk.extent = 1.0
+	loose.append(floor_chunk)
+	var high := Edible.new()
+	high.position = Vector3(0, 12.0, 0)
+	high.height = 1.0
+	high.extent = 1.0
+	loose.append(high)
+	DebrisRules.link_supports(loose)
+	_check(not floor_chunk.supports.has(high), "a chunk hanging high above is not held up by a lower one")
+	for chunk in loose:
+		chunk.free()
+
+	# Chunks that touch each other's faces (no vertical overlap) still stack up.
+	var touching: Array[Edible] = []
+	var lower := Edible.new()
+	lower.position = Vector3(0, 0.5, 0)
+	lower.height = 1.0
+	lower.extent = 1.0
+	touching.append(lower)
+	var upper := Edible.new()
+	upper.position = Vector3(0, 1.55, 0)
+	upper.height = 1.0
+	upper.extent = 1.0
+	touching.append(upper)
+	DebrisRules.link_supports(touching)
+	_check(lower.supports.has(upper) and upper.supporters == 1, "face-to-face neighbours stack up")
+	_check(not upper.grounded, "the upper face-to-face chunk is not grounded")
+	for chunk in touching:
+		chunk.free()
+
+	print("Debris weight")
+	var chunk := Edible.new()
+	_check(is_equal_approx(chunk.weight, 1.0), "a normal item weighs one city object")
+	chunk.free()
+
 	print("FAILED: %d" % _fails if _fails else "ALL PASSED")
 	quit(1 if _fails else 0)

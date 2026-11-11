@@ -225,9 +225,11 @@ func _spawn(e: Edible, frozen: bool) -> Array[Edible]:
 		game.world.add_child(d)
 		game._grid_add(d)
 		out.append(d)
+	var chunk_weight := e.weight / float(maxi(out.size(), 1))
+	for d in out:
+		d.weight = chunk_weight
 	if biggest and left > 0:
 		biggest.points += left
-	game.total_count += out.size() - 1
 	fractured += 1
 	_remove(e)
 	return out
@@ -315,8 +317,12 @@ func release(d: Edible) -> void:
 		if not is_instance_valid(item):
 			continue
 		var c: Edible = item
+		# `release()` is called again from here for cascades, so a neighbour that
+		# was already released must not be counted down twice or dropped twice.
+		if c.supporters <= 0:
+			continue
 		c.supporters -= 1
-		if c.supporters <= 0 and not c.grounded and c.freeze and c.falling_into == null:
+		if c.supporters <= 0 and not c.grounded and c.freeze and c.falling_into == null and not _live.has(c):
 			game._wake(c)
 			c.magnetic = true
 			_live[c] = true
