@@ -119,7 +119,7 @@ func city_blocks() -> int:
 
 
 func match_theme() -> int:
-	return daily_seed() % 2 if daily else map_theme
+	return daily_seed() % THEME_KEYS.size() if daily else map_theme
 
 
 func resolve_seed() -> int:

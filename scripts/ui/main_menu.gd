@@ -9,7 +9,9 @@ var _logo: LogoHole
 var _cards: VBoxContainer
 var _sheet_layer: Control
 var _sheet: PanelContainer
+var _sheet_tween: Tween
 var _lang_button: Button
+var _starting := false
 
 
 func _ready() -> void:
@@ -84,6 +86,9 @@ func _start_background() -> void:
 # --- Layout ----------------------------------------------------------------
 
 func _build() -> void:
+	if _sheet_tween and _sheet_tween.is_valid():
+		_sheet_tween.kill()
+	_sheet = null
 	for c in get_children():
 		if c != _bg:
 			c.queue_free()
@@ -251,6 +256,9 @@ func _card(spec: Dictionary) -> Button:
 		right.modulate = Color(1, 1, 1, 0.75)
 	var go: Callable = spec.go
 	b.pressed.connect(func():
+		if _starting:
+			return
+		_starting = true
 		Sfx.play("ui")
 		UiTheme.bounce(b)
 		get_tree().create_timer(0.15).timeout.connect(go))
@@ -285,6 +293,8 @@ func _round_button(icon_kind: String, action: Callable) -> Button:
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		b.add_child(icon)
 	b.pressed.connect(func():
+		if _starting:
+			return
 		Sfx.play("ui")
 		UiTheme.bounce(b)
 		action.call())
@@ -292,6 +302,8 @@ func _round_button(icon_kind: String, action: Callable) -> Button:
 
 
 func _toggle_language() -> void:
+	if _starting:
+		return
 	GameState.set_language("en" if TranslationServer.get_locale().begins_with("uk") else "uk")
 	_build()
 
@@ -311,6 +323,10 @@ func _open_settings() -> void:
 
 
 func _open_sheet(content: Control) -> void:
+	if _starting:
+		return
+	if _sheet_tween and _sheet_tween.is_valid():
+		_sheet_tween.kill()
 	if _sheet:
 		_sheet.queue_free()
 	_sheet = PanelContainer.new()
@@ -337,21 +353,26 @@ func _open_sheet(content: Control) -> void:
 		return
 	var h := _sheet.size.y
 	_sheet.position.y = size.y
-	var tw := create_tween().set_parallel()
-	tw.tween_property(_sheet_layer, "modulate:a", 1.0, 0.15)
-	tw.tween_property(_sheet, "position:y", size.y - h, 0.3).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	if _sheet_tween and _sheet_tween.is_valid():
+		_sheet_tween.kill()
+	_sheet_tween = create_tween().set_parallel()
+	_sheet_tween.tween_property(_sheet_layer, "modulate:a", 1.0, 0.15)
+	_sheet_tween.tween_property(_sheet, "position:y", size.y - h, 0.3).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 
 func _close_sheet() -> void:
 	if _sheet == null:
 		return
+	if _sheet_tween and _sheet_tween.is_valid():
+		_sheet_tween.kill()
 	var s := _sheet
 	_sheet = null
-	var tw := create_tween().set_parallel()
-	tw.tween_property(s, "position:y", size.y, 0.22).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-	tw.tween_property(_sheet_layer, "modulate:a", 0.0, 0.22)
-	tw.chain().tween_callback(func():
-		s.queue_free()
+	_sheet_tween = create_tween().set_parallel()
+	_sheet_tween.tween_property(s, "position:y", size.y, 0.22).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	_sheet_tween.tween_property(_sheet_layer, "modulate:a", 0.0, 0.22)
+	_sheet_tween.chain().tween_callback(func():
+		if is_instance_valid(s):
+			s.queue_free()
 		if _sheet == null:
 			_sheet_layer.visible = false)
 

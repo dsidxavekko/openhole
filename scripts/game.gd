@@ -43,6 +43,7 @@ var falling: Array[Edible] = []
 var total_points := 0
 var total_count := 0
 var eaten_count := 0
+var eaten_weight := 0.0
 var bound := 100.0
 var time_left := 120.0
 var running := false
@@ -108,6 +109,7 @@ func _ready() -> void:
 	hud = Hud.new()
 	add_child(hud)
 	hud.play_again.connect(func():
+		Engine.time_scale = 1.0
 		get_tree().paused = false
 		get_tree().reload_current_scene())
 	hud.to_menu.connect(_go_menu)
@@ -177,7 +179,12 @@ func resume() -> void:
 	hud.hide_pause()
 
 
+func _exit_tree() -> void:
+	Engine.time_scale = 1.0
+
+
 func _go_menu() -> void:
+	Engine.time_scale = 1.0
 	get_tree().paused = false
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
@@ -845,6 +852,7 @@ func _eat(e: Edible, h: Hole) -> void:
 		h.add_points(gained)
 		if h == player:
 			eaten_count += 1
+			eaten_weight += e.weight
 			_best_item = maxi(_best_item, e.whole_points if debris else e.points)
 		if _me(h):
 			_eat_feedback(e, h, gained)
@@ -990,6 +998,9 @@ func _rebin() -> void:
 		if e.position.y < -60.0:
 			_grid_remove(e)
 			awake.erase(e)
+			if e.kind == "debris":
+				demolition.forget(e)
+				demolition.release(e)
 			e.queue_free()
 			continue
 		# Chunks of a tall building start high up: count only real jumps.
@@ -1061,7 +1072,7 @@ func _autoplay_wants_shift() -> bool:
 
 ## Brief slow motion with a zoom-in when the player's Shift swallows a hole.
 func _shift_kill_slowmo() -> void:
-	if GameState.autoplay or Engine.time_scale != 1.0:
+	if not running or GameState.autoplay or Engine.time_scale != 1.0:
 		return
 	Engine.time_scale = SHIFT_KILL_SLOWMO
 	var base_fov := camera.fov
@@ -1204,7 +1215,8 @@ func clamp_to_play_area(p: Vector3) -> Vector3:
 func find_threat(me: Hole, reach: float) -> Hole:
 	if mode == GameState.Mode.SOLO:
 		return null
-	if not me.can_be_eaten():
+	# A hole too big for the whole thing can still break it up and eat the chunks.
+	if me.can_be_eaten():
 		return null
 	var best: Hole = null
 	var best_d := reach
@@ -1240,8 +1252,10 @@ func find_prey(me: Hole, reach: float) -> Hole:
 	return best
 
 
-## Position of the best-value food that fits, or null.
-func find_food(me: Hole, reach: float) -> Variant:
+## Position of the best-value food that fits (or that can be broken up and partly
+## eaten), or null. `prefer_breakables` keeps bots from digging into buildings
+## for single chunks when ordinary food is close by.
+func find_food(me: Hole, reach: float, prefer_breakables := false) -> Variant:
 	reach = minf(reach, 45.0)
 	var best: Variant = null
 	var best_score := 0.0
@@ -1254,12 +1268,22 @@ func find_food(me: Hole, reach: float) -> Variant:
 				best = Vector3(p.position.x, 0, p.position.z)
 	for bucket in _cells_around(me.position, reach):
 		for e: Edible in bucket:
-			if e.falling_into != null or not HoleRules.fits(e.fit_size, me.radius):
+			if e.falling_into != null:
 				continue
 			var d := e.position.distance_to(me.position)
 			if d > reach:
 				continue
-			var score := float(e.points) / (d + 4.0)
+			var score := 0.0
+			if HoleRules.fits(e.fit_size, me.radius):
+				score = float(e.points) / (d + 4.0)
+			elif e.breakable and demolition.can_fracture(e, me, d):
+				# Big building, but a chunk of it fits: bots smash into it and eat
+				# whatever piece falls in range. Worth a fraction of the whole.
+				score = float(e.points) / (d + 4.0) * (0.75 if prefer_breakables else 0.45)
+				if not prefer_breakables:
+					# Never make a bot walk further for a single chunk than for
+					# plain food of the same value.
+					score = minf(score, float(e.points) / (d + 12.0))
 			if score > best_score:
 				best_score = score
 				best = Vector3(e.position.x, 0, e.position.z)
@@ -1332,7 +1356,7 @@ func _update_hud() -> void:
 
 
 func _percent() -> float:
-	return 100.0 * eaten_count / maxf(total_count, 1)
+	return minf(100.0, 100.0 * eaten_weight / maxf(total_count, 1))
 
 
 ## Shift summary for the results screen (it only matters against other holes).
@@ -1356,6 +1380,7 @@ func _check_end() -> void:
 
 
 func _finish() -> void:
+	Engine.time_scale = 1.0
 	running = false
 	for h in holes:
 		h.move_dir = Vector2.ZERO
@@ -1421,8 +1446,8 @@ func _finish() -> void:
 		all_powerups += h.powerups_taken
 		if h != player:
 			bot_shifts += h.shifts_used
-	print("MATCH_END mode=%s points=%d eaten=%d/%d level=%d powerups=%d/%d movers_left=%d flung=%d best_item=%d fractured=%d debris_peak=%d frame_ms=%.2f shifts=%d shift_eats=%d bot_shifts=%d" % [key,
-		player.points, eaten_count, total_count, player.level, player.powerups_taken, all_powerups, movers.size(),
+	print("MATCH_END mode=%s points=%d eaten=%d/%d city=%.1f%% items=%d level=%d powerups=%d/%d movers_left=%d flung=%d best_item=%d fractured=%d debris_peak=%d frame_ms=%.2f shifts=%d shift_eats=%d bot_shifts=%d" % [key,
+		player.points, eaten_count, total_count, _percent(), roundi(eaten_weight), player.level, player.powerups_taken, all_powerups, movers.size(),
 		_flung.size(), _best_item, demolition.fractured, demolition.debris_peak, _frame_ms_sum / maxf(_frames, 1),
 		player.shifts_used, player.holes_eaten_shifted, bot_shifts])
 	if GameState.autoplay:
