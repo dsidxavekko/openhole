@@ -1,0 +1,1 @@
+Fixes: the game no longer stays in slow motion after a Shift kill at the end of a match, the Night map finally shows up in the Daily Challenge, opening one menu sheet right after closing another no longer leaves it invisible, and buildings no longer leave chunks hanging in mid-air after they are demolished.
