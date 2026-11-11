@@ -92,7 +92,30 @@ func _decide() -> void:
 		state = State.FLEE
 		var away := hole.position - threat.position
 		away.y = 0.0
-		target = game.clamp_to_play_area(hole.position + away.normalized() * (12.0 + r * 2.0))
+		if away.length() < 0.01:
+			var a := randf() * TAU
+			away = Vector3(cos(a), 0, sin(a))
+		away = away.normalized() * (12.0 + r * 2.0)
+		var want := hole.position + away
+		var target_pos: Vector3 = game.clamp_to_play_area(want)
+		# Pinned against the edge of the map or of the zone: clamping dropped the
+		# target right under the bot, so it would just stand there and be eaten.
+		# Slide along the boundary instead, picking the side that leads further
+		# away from the threat.
+		if Vector2(target_pos.x - hole.position.x, target_pos.z - hole.position.z).length() < 2.0:
+			var flat := Vector2(away.x, away.z).normalized()
+			var best_pos := target_pos
+			var best_d := -INF
+			var sides := [1.0, -1.0]
+			for s: float in sides:
+				var tangent := Vector2(flat.y, -flat.x) * s
+				var opt: Vector3 = game.clamp_to_play_area(hole.position + Vector3(tangent.x, 0, tangent.y) * (12.0 + r * 2.0))
+				var d := Vector2(opt.x - threat.position.x, opt.z - threat.position.z).length()
+				if d > best_d:
+					best_d = d
+					best_pos = opt
+			target_pos = best_pos
+		target = target_pos
 		return
 	if _age > _no_chase_start and _chase_cooldown <= 0.0 and randf() < skill:
 		var prey: Hole = game.find_prey(hole, 4.0 + r * 2.0)
@@ -100,7 +123,7 @@ func _decide() -> void:
 			state = State.CHASE
 			target = prey.position
 			return
-	var food: Variant = game.find_food(hole, 10.0 + r * 2.5)
+	var food: Variant = game.find_food(hole, 10.0 + r * 2.5, _age > 20.0 and randf() < skill)
 	if food != null:
 		state = State.FOOD
 		target = food
