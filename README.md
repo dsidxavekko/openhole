@@ -60,7 +60,8 @@ via `make GODOT=... ANDROID_HOME=... KEYSTORE=...`.
 ```sh
 make test     # headless logic tests
 make smoke    # full bot-driven match without graphics (MODE=classic|solo|battle|daily)
-make apk      # build/openhole.apk
+make apk      # debug APK: build/openhole.apk
+make release  # release-signed APK: build/openhole-release.apk
 make install  # adb install + launch on a connected phone
 make web      # browser build in out/web (itch.io), make serve-web to try it
 make run-pc   # play on PC (WASD / arrows, mouse drag = joystick, Shift = Shift)
