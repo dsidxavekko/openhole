@@ -49,6 +49,7 @@ const MODELS := {
 const FIT_HEIGHT := ["person", "tree", "lamp", "sign", "tlight", "cone", "pot", "flower"]
 
 var _cache := {}
+var _aabbs := {}
 
 
 func has_kind(kind: String) -> bool:
@@ -56,24 +57,63 @@ func has_kind(kind: String) -> bool:
 
 
 ## Deterministic pick (depends on position, so the same seed looks the same).
-func pick(kind: String, p: Vector3) -> Dictionary:
+## `tint` multiplies the model's own colours; Color.WHITE keeps stock materials.
+func pick(kind: String, p: Vector3, tint: Color = Color.WHITE) -> Dictionary:
 	var list: Array = MODELS[kind]
 	var idx := absi(int(p.x * 73.1) * 31 + int(p.z * 131.7)) % list.size()
-	return _load(list[idx])
+	return _load(list[idx], tint)
 
 
-func _load(path: String) -> Dictionary:
-	if _cache.has(path):
-		return _cache[path]
+func _load(path: String, tint: Color) -> Dictionary:
+	var key := path + "|" + tint.to_html(false)
+	if _cache.has(key):
+		return _cache[key]
 	var scene: PackedScene = load(ROOT + path + ".glb")
-	var probe := scene.instantiate()
-	var acc: Array = [null]
-	_merge_aabb(probe, Transform3D.IDENTITY, acc)
-	_fix_materials(probe)
-	probe.free()
-	var info := {"path": ROOT + path + ".glb", "scene": scene, "aabb": acc[0] if acc[0] != null else AABB(Vector3(-0.5, 0, -0.5), Vector3.ONE)}
-	_cache[path] = info
+	if not _aabbs.has(path):
+		var probe := scene.instantiate()
+		var acc: Array = [null]
+		_merge_aabb(probe, Transform3D.IDENTITY, acc)
+		_fix_materials(probe)
+		probe.free()
+		_aabbs[path] = acc[0] if acc[0] != null else AABB(Vector3(-0.5, 0, -0.5), Vector3.ONE)
+	if tint != Color.WHITE:
+		# A tinted copy must not touch the shared stock materials: duplicate
+		# every mesh and material on a throwaway instance, then pack it.
+		var probe := scene.instantiate()
+		_apply_tint(probe, tint)
+		var packed := PackedScene.new()
+		if packed.pack(probe) == OK:
+			scene = packed
+		probe.free()
+	var info := {"path": ROOT + path + ".glb", "scene": scene, "aabb": _aabbs[path]}
+	_cache[key] = info
 	return info
+
+
+## Multiplies the albedo of every material under `n` by `tint`. Meshes and
+## materials are duplicated first (shared per call, not per mesh), so the stock
+## resources used by other themes stay untouched.
+static func _apply_tint(n: Node, tint: Color) -> void:
+	var seen := {}
+	_apply_tint_rec(n, tint, seen)
+
+
+static func _apply_tint_rec(n: Node, tint: Color, seen: Dictionary) -> void:
+	if n is MeshInstance3D and (n as MeshInstance3D).mesh:
+		var mi := n as MeshInstance3D
+		var mesh := mi.mesh.duplicate() as Mesh
+		for i in mesh.get_surface_count():
+			var mat := mesh.surface_get_material(i) as BaseMaterial3D
+			if mat == null:
+				continue
+			if not seen.has(mat):
+				var dup := mat.duplicate() as BaseMaterial3D
+				dup.albedo_color = mat.albedo_color * tint
+				seen[mat] = dup
+			mesh.surface_set_material(i, seen[mat])
+		mi.mesh = mesh
+	for c in n.get_children():
+		_apply_tint_rec(c, tint, seen)
 
 
 static func _merge_aabb(n: Node, xf: Transform3D, acc: Array) -> void:

@@ -41,12 +41,11 @@ const SMALL_YARD := ["person", "person", "bush", "bush", "crate", "pot", "flower
 const SMALL_PARK := ["tree", "tree", "tree", "bush", "bush", "bench", "person", "person", "person",
 	"rock", "flower", "flower", "lamp", "trash"]
 
-const CAR_COLORS := [Color("e63946"), Color("f1fa8c"), Color("457b9d"), Color("f4a261"),
-	Color("2a9d8f"), Color("ffffff"), Color("222222"), Color("8e44ad")]
-const BUILDING_COLORS := [Color("d8c3a5"), Color("8e8d8a"), Color("e98074"), Color("a3bcb6"),
-	Color("c9ada7"), Color("f2e9e4"), Color("9a8c98"), Color("b5c99a")]
-const SHIRT_COLORS := [Color("e76f51"), Color("264653"), Color("e9c46a"), Color("06d6a0"),
-	Color("118ab2"), Color("ef476f")]
+## Historical colour-draw sizes: palettes may shrink or grow, but the number
+## of rng draws per site must never change, or old seeds produce new cities.
+const BUILDING_DRAWS := 8
+const CAR_DRAWS := 8
+const SHIRT_DRAWS := 6
 
 
 static func map_extent(blocks: int) -> float:
@@ -56,6 +55,7 @@ static func map_extent(blocks: int) -> float:
 static func generate(seed_value: int, blocks: int, theme: int) -> Array:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
+	var pal := ThemePalettes.for_theme(theme)
 	var out: Array = []
 	var half := map_extent(blocks) / 2.0
 	for bi in blocks:
@@ -66,13 +66,13 @@ static func generate(seed_value: int, blocks: int, theme: int) -> Array:
 			var center_t := 1.0 - clampf(center.length() / half, 0.0, 1.0)
 			var park_chance := 0.12 if theme == 0 else 0.22
 			if rng.randf() < park_chance:
-				_park(rng, out, bx, bz)
+				_park(rng, out, bx, bz, pal)
 			elif theme == 0:
-				_city_lots(rng, out, bx, bz, center_t)
+				_city_lots(rng, out, bx, bz, center_t, pal)
 			else:
-				_suburb_lots(rng, out, bx, bz)
-			_sidewalk(rng, out, bx, bz)
-	_roads(rng, out, blocks, half)
+				_suburb_lots(rng, out, bx, bz, pal)
+			_sidewalk(rng, out, bx, bz, pal)
+	_roads(rng, out, blocks, half, pal)
 	return out
 
 
@@ -80,14 +80,18 @@ static func _add(out: Array, kind: String, x: float, z: float, yaw: float, size:
 	out.append({"k": kind, "p": Vector3(x, 0.0, z), "r": yaw, "s": size, "c": color})
 
 
-static func _small(rng: RandomNumberGenerator, out: Array, kind: String, x: float, z: float) -> void:
+static func _small(rng: RandomNumberGenerator, out: Array, kind: String, x: float, z: float,
+		pal: Dictionary) -> void:
 	var c := Color.WHITE
 	match kind:
-		"person": c = SHIRT_COLORS[rng.randi() % SHIRT_COLORS.size()]
-		"hydrant": c = Color("d62828")
-		"trash": c = Color("3a5a40")
-		"mailbox": c = Color("1d4ed8")
-		"bike": c = CAR_COLORS[rng.randi() % CAR_COLORS.size()]
+		"person":
+			# The drawn colour is dead (person models take person_tint); the draw
+			# itself keeps the rng stream stable.
+			c = pal.shirt[rng.randi() % SHIRT_DRAWS % pal.shirt.size()]
+		"hydrant": c = pal.hydrant
+		"trash": c = pal.trash
+		"mailbox": c = pal.mailbox
+		"bike": c = pal.car[rng.randi() % CAR_DRAWS % pal.car.size()]
 	var size: Vector3 = SIZES[kind]
 	if kind == "tree":
 		size *= rng.randf_range(0.8, 1.3)
@@ -101,7 +105,7 @@ static func _pick(rng: RandomNumberGenerator, list: Array) -> String:
 
 ## Small things scattered in a rectangle, with a crude minimum spacing.
 static func _scatter(rng: RandomNumberGenerator, out: Array, list: Array, count: int,
-		x0: float, z0: float, x1: float, z1: float) -> void:
+		x0: float, z0: float, x1: float, z1: float, pal: Dictionary) -> void:
 	var placed: Array[Vector2] = []
 	for i in count:
 		for attempt in 4:
@@ -113,11 +117,12 @@ static func _scatter(rng: RandomNumberGenerator, out: Array, list: Array, count:
 					break
 			if ok:
 				placed.append(p)
-				_small(rng, out, _pick(rng, list), p.x, p.y)
+				_small(rng, out, _pick(rng, list), p.x, p.y, pal)
 				break
 
 
-static func _city_lots(rng: RandomNumberGenerator, out: Array, bx: float, bz: float, center_t: float) -> void:
+static func _city_lots(rng: RandomNumberGenerator, out: Array, bx: float, bz: float,
+		center_t: float, pal: Dictionary) -> void:
 	var inner := BLOCK - SIDEWALK * 2.0
 	var ox := bx + SIDEWALK
 	var oz := bz + SIDEWALK
@@ -126,12 +131,12 @@ static func _city_lots(rng: RandomNumberGenerator, out: Array, bx: float, bz: fl
 		var f := rng.randf_range(13.0, 17.0)
 		var h := lerpf(30.0, 60.0, center_t) * rng.randf_range(0.8, 1.15)
 		_add(out, "building", ox + inner / 2.0, oz + inner / 2.0, 0.0, Vector3(f, h, f),
-			BUILDING_COLORS[rng.randi() % BUILDING_COLORS.size()])
+			pal.building[rng.randi() % BUILDING_DRAWS % pal.building.size()])
 		# Plaza corners around the tower.
 		for corner in 4:
 			var cx := ox + (1.5 if corner % 2 == 0 else inner - 1.5)
 			var cz := oz + (1.5 if corner < 2 else inner - 1.5)
-			_scatter(rng, out, SMALL_YARD, rng.randi_range(2, 4), cx - 1.0, cz - 1.0, cx + 1.0, cz + 1.0)
+			_scatter(rng, out, SMALL_YARD, rng.randi_range(2, 4), cx - 1.0, cz - 1.0, cx + 1.0, cz + 1.0, pal)
 		return
 	var lot := inner / 2.0
 	for li in 2:
@@ -143,7 +148,7 @@ static func _city_lots(rng: RandomNumberGenerator, out: Array, bx: float, bz: fl
 			var cx := ox + lot * li + lot / 2.0
 			var cz := oz + lot * lj + lot / 2.0
 			_add(out, "building", cx, cz, 0.0, Vector3(fx, h, fz),
-				BUILDING_COLORS[rng.randi() % BUILDING_COLORS.size()])
+				pal.building[rng.randi() % BUILDING_DRAWS % pal.building.size()])
 			# Things in the gap between the building and the lot edge.
 			var gx := lot / 2.0 - 0.7
 			for n in rng.randi_range(4, 8):
@@ -151,10 +156,11 @@ static func _city_lots(rng: RandomNumberGenerator, out: Array, bx: float, bz: fl
 				var t := rng.randf_range(-gx, gx)
 				var px := cx + (t if side < 2 else (gx if side == 2 else -gx))
 				var pz := cz + (t if side >= 2 else (gx if side == 0 else -gx))
-				_small(rng, out, _pick(rng, SMALL_YARD), px, pz)
+				_small(rng, out, _pick(rng, SMALL_YARD), px, pz, pal)
 
 
-static func _suburb_lots(rng: RandomNumberGenerator, out: Array, bx: float, bz: float) -> void:
+static func _suburb_lots(rng: RandomNumberGenerator, out: Array, bx: float, bz: float,
+		pal: Dictionary) -> void:
 	var inner := BLOCK - SIDEWALK * 2.0
 	var ox := bx + SIDEWALK
 	var oz := bz + SIDEWALK
@@ -165,22 +171,22 @@ static func _suburb_lots(rng: RandomNumberGenerator, out: Array, bx: float, bz: 
 			var cz := oz + lot * lj + lot / 2.0
 			if li == 1 and lj == 1:
 				# Backyard in the middle of the block.
-				_scatter(rng, out, SMALL_PARK, rng.randi_range(4, 7), cx - 3.0, cz - 3.0, cx + 3.0, cz + 3.0)
+				_scatter(rng, out, SMALL_PARK, rng.randi_range(4, 7), cx - 3.0, cz - 3.0, cx + 3.0, cz + 3.0, pal)
 				continue
 			var f := rng.randf_range(4.5, 5.5)
 			_add(out, "house", cx, cz, 0.0, Vector3(f, rng.randf_range(3.5, 5.5), f * rng.randf_range(0.8, 1.0)),
-				BUILDING_COLORS[rng.randi() % BUILDING_COLORS.size()])
+				pal.house[rng.randi() % BUILDING_DRAWS % pal.house.size()])
 			for n in rng.randi_range(2, 4):
 				var a := rng.randf() * TAU
-				_small(rng, out, _pick(rng, SMALL_YARD), cx + cos(a) * 3.3, cz + sin(a) * 3.3)
+				_small(rng, out, _pick(rng, SMALL_YARD), cx + cos(a) * 3.3, cz + sin(a) * 3.3, pal)
 
 
-static func _park(rng: RandomNumberGenerator, out: Array, bx: float, bz: float) -> void:
+static func _park(rng: RandomNumberGenerator, out: Array, bx: float, bz: float, pal: Dictionary) -> void:
 	var m := SIDEWALK + 1.0
-	_scatter(rng, out, SMALL_PARK, rng.randi_range(40, 60), bx + m, bz + m, bx + BLOCK - m, bz + BLOCK - m)
+	_scatter(rng, out, SMALL_PARK, rng.randi_range(40, 60), bx + m, bz + m, bx + BLOCK - m, bz + BLOCK - m, pal)
 
 
-static func _sidewalk(rng: RandomNumberGenerator, out: Array, bx: float, bz: float) -> void:
+static func _sidewalk(rng: RandomNumberGenerator, out: Array, bx: float, bz: float, pal: Dictionary) -> void:
 	var inset := 1.4
 	var step := 2.2
 	var t := 1.5
@@ -196,21 +202,21 @@ static func _sidewalk(rng: RandomNumberGenerator, out: Array, bx: float, bz: flo
 				2: x = bx + inset; z = bz + t
 				3: x = bx + BLOCK - inset; z = bz + t
 			var k := _pick(rng, SMALL_STREET)
-			_small(rng, out, k, x, z)
+			_small(rng, out, k, x, z, pal)
 			# Sometimes a little crowd.
 			if k == "person" and rng.randf() < 0.25:
 				for n in rng.randi_range(1, 3):
-					_small(rng, out, "person", x + rng.randf_range(-0.9, 0.9), z + rng.randf_range(-0.9, 0.9))
+					_small(rng, out, "person", x + rng.randf_range(-0.9, 0.9), z + rng.randf_range(-0.9, 0.9), pal)
 		t += step
 	# Traffic lights on the block corners.
 	for corner in 4:
 		if rng.randf() < 0.6:
 			var cx := bx + (0.6 if corner % 2 == 0 else BLOCK - 0.6)
 			var cz := bz + (0.6 if corner < 2 else BLOCK - 0.6)
-			_small(rng, out, "tlight", cx, cz)
+			_small(rng, out, "tlight", cx, cz, pal)
 
 
-static func _roads(rng: RandomNumberGenerator, out: Array, blocks: int, half: float) -> void:
+static func _roads(rng: RandomNumberGenerator, out: Array, blocks: int, half: float, pal: Dictionary) -> void:
 	for j in blocks + 1:
 		var road_c := -half + ROAD / 2.0 + j * PITCH
 		for horizontal in [true, false]:
@@ -229,7 +235,13 @@ static func _roads(rng: RandomNumberGenerator, out: Array, blocks: int, half: fl
 						continue
 					var is_bus := not parked and rng.randf() < 0.1
 					var kind := "bus" if is_bus else "car"
-					var color: Color = Color("f4d35e") if is_bus else CAR_COLORS[rng.randi() % CAR_COLORS.size()]
+					var color: Color
+					if is_bus:
+						color = Color("f4d35e")
+					else:
+						# The drawn colour is dead (car models take car_tint), but the
+						# draw keeps the rng stream stable.
+						color = pal.car[rng.randi() % CAR_DRAWS % pal.car.size()]
 					var yaw := (PI / 2.0 if horizontal else 0.0) + (PI if lane > 0 else 0.0)
 					var x: float = t if horizontal else road_c + lane
 					var z: float = road_c + lane if horizontal else t
@@ -245,4 +257,4 @@ static func _roads(rng: RandomNumberGenerator, out: Array, blocks: int, half: fl
 				px += ROAD + 2.0
 			if px > half - 1.0:
 				continue
-			_small(rng, out, "person", px, road_c + rng.randf_range(-1.5, 1.5))
+			_small(rng, out, "person", px, road_c + rng.randf_range(-1.5, 1.5), pal)

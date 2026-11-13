@@ -10,7 +10,10 @@ const SMALL_VIS_RANGE := 70.0
 
 ## Night theme: dark primitive materials (no shader work).
 var night := false
+## Match theme (GameState.MapTheme value): picks the model tints.
+var theme := 0
 var library := ModelLibrary.new()
+var _palette: Dictionary = ThemePalettes.for_theme(0)
 var _materials := {}
 var _shapes := {}
 var _box := BoxMesh.new()
@@ -29,6 +32,11 @@ func _init() -> void:
 	_sphere.height = 1.0
 	_sphere.radial_segments = 12
 	_sphere.rings = 6
+
+
+func set_theme(value: int) -> void:
+	theme = value
+	_palette = ThemePalettes.for_theme(value)
 
 
 func material(color: Color) -> StandardMaterial3D:
@@ -71,7 +79,7 @@ func build(spec: Dictionary) -> Edible:
 		model_kind = "skyscraper"
 	var size := s
 	if library.has_kind(model_kind):
-		size = _add_model(e, model_kind, kind, s, spec.p)
+		size = _add_model(e, model_kind, kind, s, spec.p, spec.c)
 	else:
 		_add_primitive(e, kind, s, spec.c)
 
@@ -98,9 +106,24 @@ func build(spec: Dictionary) -> Edible:
 	return e
 
 
+## Model tint per kind: buildings and houses carry their palette colour in the
+## spec, vehicles and people get a theme wash, everything else the prop wash.
+## Color.WHITE means stock materials (no duplication at all).
+func _tint(kind: String, c: Color) -> Color:
+	match kind:
+		"building", "skyscraper", "house":
+			return c
+		"car", "bus":
+			return _palette.car_tint
+		"person":
+			return _palette.person_tint
+		_:
+			return _palette.prop_tint
+
+
 ## Adds the model under `e`, centred on the body origin. Returns the real size.
-func _add_model(e: Edible, model_kind: String, kind: String, s: Vector3, p: Vector3) -> Vector3:
-	var info := library.pick(model_kind, p)
+func _add_model(e: Edible, model_kind: String, kind: String, s: Vector3, p: Vector3, c: Color) -> Vector3:
+	var info := library.pick(model_kind, p, _tint(kind, c))
 	var a: AABB = info.aabb
 	var rot90 := false
 	var sc := Vector3.ONE

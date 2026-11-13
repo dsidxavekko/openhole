@@ -274,6 +274,7 @@ func _build_ground(half: float) -> void:
 func _spawn_city(seed_value: int, blocks: int) -> void:
 	var factory := EdibleFactory.new()
 	factory.night = _theme() == GameState.MapTheme.NIGHT
+	factory.set_theme(_theme())
 	# Night keeps the dense city layout (tall buildings = lit facades).
 	var layout_theme := 0 if _theme() == GameState.MapTheme.NIGHT else _theme()
 	for spec in CityGen.generate(seed_value, blocks, layout_theme):

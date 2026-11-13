@@ -19,6 +19,18 @@ func _hash(specs: Array) -> int:
 	return s.hash()
 
 
+## First surface material in the tree, for model tint checks.
+func _first_material(n: Node) -> BaseMaterial3D:
+	if n is MeshInstance3D and (n as MeshInstance3D).mesh \
+			and (n as MeshInstance3D).mesh.get_surface_count() > 0:
+		return (n as MeshInstance3D).mesh.surface_get_material(0) as BaseMaterial3D
+	for c in n.get_children():
+		var m := _first_material(c)
+		if m:
+			return m
+	return null
+
+
 func _area(soups: Array) -> float:
 	var a := 0.0
 	for s in soups:
@@ -160,6 +172,46 @@ func _init() -> void:
 		if mx < CityGen.ROAD and mz < CityGen.ROAD:
 			in_crossing += 1
 	_check(in_crossing == 0, "nobody stands inside a crossing (%d)" % in_crossing)
+	var pal_a := CityGen.generate(42, 5, 0)
+	var colored := 0
+	for sp in pal_a:
+		if sp.k == "building" and sp.c != Color.WHITE:
+			colored += 1
+	_check(colored > 40, "city buildings carry palette colours (%d)" % colored)
+	var stock_house := true
+	for sp in s:
+		if sp.k == "house" and sp.c != Color.WHITE:
+			stock_house = false
+	_check(stock_house, "suburb houses keep the stock look")
+
+	print("ThemePalettes")
+	var pal_city := ThemePalettes.for_theme(0)
+	var pal_mexico := ThemePalettes.for_theme(3)
+	_check(pal_city.building.size() >= 6, "city palette has building colours")
+	_check(pal_mexico.building.size() >= 4, "mexico palette has building colours")
+	_check(pal_mexico.car_tint != Color.WHITE and pal_mexico.prop_tint != Color.WHITE, "mexico washes models")
+	_check(ThemePalettes.for_theme(2) == pal_city, "night keeps the city palette")
+	for key in ["building", "house", "car", "shirt", "car_tint", "person_tint", "prop_tint"]:
+		if not pal_mexico.has(key):
+			_check(false, "mexico palette has %s" % key)
+
+	print("ModelLibrary")
+	var lib := ModelLibrary.new()
+	var stock_car: Dictionary = lib.pick("car", Vector3(3, 0, 7))
+	var warm_car: Dictionary = lib.pick("car", Vector3(3, 0, 7), Color(1.0, 0.9, 0.7))
+	_check(stock_car.scene != warm_car.scene, "a tinted model packs its own scene")
+	_check(lib.pick("car", Vector3(3, 0, 7), Color(1.0, 0.9, 0.7)).scene == warm_car.scene, "tinted scenes are cached")
+	var stock_inst: Node = (stock_car.scene as PackedScene).instantiate()
+	var warm_inst: Node = (warm_car.scene as PackedScene).instantiate()
+	var m_stock := _first_material(stock_inst)
+	var m_warm := _first_material(warm_inst)
+	var tinted := m_stock != null and m_warm != null \
+		and m_warm.albedo_color.is_equal_approx(m_stock.albedo_color * Color(1.0, 0.9, 0.7))
+	_check(tinted, "tint multiplies the albedo")
+	var stock_untouched := m_stock != null and m_stock.albedo_color.is_equal_approx(Color.WHITE)
+	_check(stock_untouched, "stock materials stay untouched")
+	stock_inst.free()
+	warm_inst.free()
 
 	print("Fracture")
 	var box_mesh := BoxMesh.new()
