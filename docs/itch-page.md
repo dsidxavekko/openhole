@@ -27,6 +27,10 @@ Choose the moment well.
 **Modes:** Classic (2 minutes vs bots, biggest hole wins), Solo, Battle (last hole
 standing, the safe zone shrinks) and a Daily challenge. Shift works in all of them.
 
+**Maps:** a sunny day city, a warm suburb, a moonlit night city and the new sandy
+**Mexico City** with terracotta low-rise blocks and a low golden sun. Cars, people
+and props take their colours from the map, and every Daily challenge picks one.
+
 ## Theme: SHIFT
 
 We read SHIFT as a **shift of roles**. In a hole-eating game size decides everything:
@@ -41,6 +45,23 @@ Being small becomes the dangerous state, and you pay for it:
 - then 8 seconds of cooldown.
 
 It is a button, not a random pick-up. You decide when to swap sides.
+
+And the bots know it too: on **Hard** difficulty they have their own Shift. They
+slip away from a bigger hole at the last moment, or dive into one that got careless.
+Land a Shift kill yourself and the game drops into a short slow-motion close-up;
+every hole-vs-hole kill shows up in a kill feed, the results screen counts your
+Shifts and Shift kills, and three Shift kills unlock the purple **Phase** skin.
+
+## What's new since launch
+
+- **v0.4.0** — Mexico City map; buildings pick models that fit their height instead
+  of being stretched; map colour palettes for cars, people, props and debris.
+- **v0.3.x** — night map; detailed streets (zebra crossings, tiles, manholes);
+  juicier swallowing (bursts, shrinking fall, softer dust); bots hunt breakable
+  buildings and slide along walls; the city percentage now counts whole objects;
+  no more chunks hanging in mid-air; smoother play on phones.
+- **v0.3.0** — Shift for Hard bots, slow-motion Shift kills, kill feed, Shift stats
+  on the results screen, Phase skin.
 
 ## Controls
 
