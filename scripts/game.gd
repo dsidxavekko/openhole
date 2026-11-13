@@ -220,6 +220,15 @@ func _build_environment() -> void:
 		env.ambient_light_energy = 0.5
 		sun.light_color = Color(0.58, 0.68, 1.0)
 		sun.light_energy = 0.55
+	elif _theme() == GameState.MapTheme.MEXICO:
+		# Hollywood-Mexico light: a sandy haze in the sky, a golden low sun and
+		# warm bounce. Colours only — no fog, no sky shader (see night above).
+		env.background_color = Color("e9d3ab")
+		env.ambient_light_color = Color(1.0, 0.88, 0.72)
+		env.ambient_light_energy = 0.55
+		sun.light_color = Color("ffd79a")
+		sun.light_energy = 1.15
+		sun.rotation_degrees = Vector3(-48, -28, 0)
 
 	camera = Camera3D.new()
 	camera.fov = 50.0
@@ -265,6 +274,13 @@ func _build_ground(half: float) -> void:
 		ground_mat.set_shader_parameter("road_color", Color("1d1f27"))
 		ground_mat.set_shader_parameter("line_color", Color("ffd98a"))
 		ground_mat.set_shader_parameter("outside_color", Color("121a11"))
+	elif _theme() == GameState.MapTheme.MEXICO:
+		# Packed sand yards, sun-bleached asphalt, dusty kerbs.
+		ground_mat.set_shader_parameter("grass_color", Color("c9a877"))
+		ground_mat.set_shader_parameter("walk_color", Color("dcc7a4"))
+		ground_mat.set_shader_parameter("road_color", Color("8b8073"))
+		ground_mat.set_shader_parameter("line_color", Color("f0e2c4"))
+		ground_mat.set_shader_parameter("outside_color", Color("c9ad7e"))
 	var mi := MeshInstance3D.new()
 	mi.mesh = plane
 	mi.material_override = ground_mat

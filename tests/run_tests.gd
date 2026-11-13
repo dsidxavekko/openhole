@@ -156,6 +156,20 @@ func _init() -> void:
 	_check(_hash(a) == _hash(b), "same seed gives same city")
 	_check(_hash(a) != _hash(c), "different seed gives different city")
 	_check(_hash(a) != _hash(s), "suburb theme differs from city")
+	var mex := CityGen.generate(42, 5, 3)
+	_check(_hash(mex) != _hash(a) and _hash(mex) != _hash(s), "mexico theme differs from city and suburb")
+	var mex_houses := 0
+	var mex_builds := 0
+	var mex_tallest := 0.0
+	for sp in mex:
+		if sp.k == "house":
+			mex_houses += 1
+		elif sp.k == "building":
+			mex_builds += 1
+			mex_tallest = maxf(mex_tallest, sp.s.y)
+	_check(mex_houses == 0 and mex_builds > 100,
+		"mexico is all low blocks (%d blocks, %d houses)" % [mex_builds, mex_houses])
+	_check(mex_tallest < 20.0, "mexico stays low-rise (%.1f)" % mex_tallest)
 	_check(CityGen.generate(7, 2, 0).size() > 300, "menu background city has enough objects")
 	var half := CityGen.map_extent(5) / 2.0
 	var inside := true
@@ -164,7 +178,7 @@ func _init() -> void:
 			inside = false
 	_check(inside, "everything is inside the map")
 	var in_crossing := 0
-	for sp in a + s:
+	for sp in a + s + mex:
 		if sp.k != "person":
 			continue
 		var mx := fposmod(sp.p.x + half, CityGen.PITCH)

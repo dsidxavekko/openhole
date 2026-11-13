@@ -22,12 +22,10 @@ const SHIRT_CITY := [Color("e76f51"), Color("264653"), Color("e9c46a"), Color("0
 	Color("118ab2"), Color("ef476f")]
 
 ## Mexico City: sand, terracotta and ochre, plus a warm dust wash on everything.
-const BUILDING_MEXICO := [Color("c0714b"), Color("d9a45b"), Color("e8d0a9"), Color("f2e8d5"),
-	Color("b25b3f"), Color("d9b98a")]
-const HOUSE_MEXICO := [Color(1.0, 0.90, 0.70), Color(1.0, 0.94, 0.80)]
+const BUILDING_MEXICO := [Color("f2c193"), Color("e8a97d"), Color("f0d6b0"), Color("d99a70"),
+	Color("efcaa0"), Color("e0b48c")]
 const CAR_MEXICO := [Color("c25b3a"), Color("d9a45b"), Color("8a9a6b"), Color("e8d5b0"),
 	Color("5d4a3a"), Color("b8b0a0"), Color("a34a2e"), Color("e0c9a0")]
-const WARM_WASH := Color(1.0, 0.90, 0.72)
 
 const CITY := {
 	"building": BUILDING_CITY,
@@ -47,11 +45,12 @@ const SUBURB := CITY
 const NIGHT := CITY
 const MEXICO := {
 	"building": BUILDING_MEXICO,
-	"house": HOUSE_MEXICO,
+	# Mexico has no suburban houses: its layout is all small flat-roofed blocks.
+	"house": HOUSE_STOCK,
 	"car": CAR_MEXICO,
 	"shirt": SHIRT_CITY,
-	"car_tint": Color(1.0, 0.88, 0.68),
-	"person_tint": WARM_WASH,
+	"car_tint": Color(1.0, 0.84, 0.62),
+	"person_tint": Color(1.0, 0.88, 0.68),
 	"prop_tint": Color(1.0, 0.93, 0.78),
 	"hydrant": Color("d62828"),
 	"trash": Color("3a5a40"),

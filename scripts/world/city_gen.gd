@@ -64,11 +64,13 @@ static func generate(seed_value: int, blocks: int, theme: int) -> Array:
 			var bz := -half + ROAD + bj * PITCH
 			var center := Vector2(bx + BLOCK / 2.0, bz + BLOCK / 2.0)
 			var center_t := 1.0 - clampf(center.length() / half, 0.0, 1.0)
-			var park_chance := 0.12 if theme == 0 else 0.22
+			var park_chance := 0.12 if theme == 0 else (0.20 if theme == 3 else 0.22)
 			if rng.randf() < park_chance:
 				_park(rng, out, bx, bz, pal)
 			elif theme == 0:
 				_city_lots(rng, out, bx, bz, center_t, pal)
+			elif theme == 3:
+				_mexico_lots(rng, out, bx, bz, center_t, pal)
 			else:
 				_suburb_lots(rng, out, bx, bz, pal)
 			_sidewalk(rng, out, bx, bz, pal)
@@ -179,6 +181,34 @@ static func _suburb_lots(rng: RandomNumberGenerator, out: Array, bx: float, bz: 
 			for n in rng.randi_range(2, 4):
 				var a := rng.randf() * TAU
 				_small(rng, out, _pick(rng, SMALL_YARD), cx + cos(a) * 3.3, cz + sin(a) * 3.3, pal)
+
+
+## Mexico City: a dense low-rise quarter — colonial patio blocks made of
+## small flat-roofed buildings (the neutral commercial kit takes the sand and
+## terracotta palette cleanly; suburban houses stay colourful and would fight
+## it), a little taller towards the centre.
+static func _mexico_lots(rng: RandomNumberGenerator, out: Array, bx: float, bz: float,
+		center_t: float, pal: Dictionary) -> void:
+	var inner := BLOCK - SIDEWALK * 2.0
+	var ox := bx + SIDEWALK
+	var oz := bz + SIDEWALK
+	var lot := inner / 3.0
+	for li in 3:
+		for lj in 3:
+			var cx := ox + lot * li + lot / 2.0
+			var cz := oz + lot * lj + lot / 2.0
+			if li == 1 and lj == 1:
+				# Patio in the middle of the block.
+				_scatter(rng, out, SMALL_PARK, rng.randi_range(4, 7), cx - 3.0, cz - 3.0, cx + 3.0, cz + 3.0, pal)
+				continue
+			# One- to three-storey patio blocks, taller downtown.
+			var f := rng.randf_range(4.6, 6.6)
+			var h := rng.randf_range(3.5, 6.5) + center_t * rng.randf_range(0.5, 6.0)
+			_add(out, "building", cx, cz, 0.0, Vector3(f, h, f * rng.randf_range(0.8, 1.0)),
+				pal.building[rng.randi() % pal.building.size()])
+			for n in rng.randi_range(2, 4):
+				var a := rng.randf() * TAU
+				_small(rng, out, _pick(rng, SMALL_YARD), cx + cos(a) * 3.6, cz + sin(a) * 3.6, pal)
 
 
 static func _park(rng: RandomNumberGenerator, out: Array, bx: float, bz: float, pal: Dictionary) -> void:
