@@ -212,6 +212,13 @@ func _init() -> void:
 	_check(stock_untouched, "stock materials stay untouched")
 	stock_inst.free()
 	warm_inst.free()
+	var fitted: Dictionary = lib.pick_fit("building", Vector3(1, 0, 2), Vector3(9, 12, 9))
+	var fa: AABB = fitted.aabb
+	var fk: float = minf(9.0 / maxf(fa.size.x, 0.001), 9.0 / maxf(fa.size.z, 0.001))
+	var ff: float = 12.0 / maxf(fa.size.y * fk, 0.001)
+	_check(ff > 0.75 and ff < 1.35, "picked building needs little stretch (%.2f)" % ff)
+	_check(lib.pick_fit("building", Vector3(1, 0, 2), Vector3(9, 12, 9)).scene == fitted.scene,
+		"fit pick is deterministic")
 
 	print("Fracture")
 	var box_mesh := BoxMesh.new()

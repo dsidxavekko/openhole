@@ -123,7 +123,10 @@ func _tint(kind: String, c: Color) -> Color:
 
 ## Adds the model under `e`, centred on the body origin. Returns the real size.
 func _add_model(e: Edible, model_kind: String, kind: String, s: Vector3, p: Vector3, c: Color) -> Vector3:
-	var info := library.pick(model_kind, p, _tint(kind, c))
+	var tint := _tint(kind, c)
+	# Buildings: pick by height fit instead of stretching one model to any size.
+	var info := library.pick_fit(model_kind, p, s, tint) if kind == "building" \
+		else library.pick(model_kind, p, tint)
 	var a: AABB = info.aabb
 	var rot90 := false
 	var sc := Vector3.ONE
@@ -138,7 +141,9 @@ func _add_model(e: Edible, model_kind: String, kind: String, s: Vector3, p: Vect
 		var k := minf(s.x / ax, s.z / az)
 		sc = Vector3(k, k, k)
 		if kind == "building":
-			sc.y = k * clampf(s.y / (a.size.y * k), 0.75, 1.6)
+			# pick_fit already chose a model close to the target height; the
+			# clamp only limits the remaining stretch.
+			sc.y = k * clampf(s.y / (a.size.y * k), 0.85, 1.35)
 
 	var holder := Node3D.new()
 	holder.rotation.y = PI / 2.0 if rot90 else 0.0

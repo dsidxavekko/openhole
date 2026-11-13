@@ -64,6 +64,36 @@ func pick(kind: String, p: Vector3, tint: Color = Color.WHITE) -> Dictionary:
 	return _load(list[idx], tint)
 
 
+## Like pick(), but prefers models whose height fits `s` without much vertical
+## stretching (buildings): the model is chosen among the closest fits by the
+## same position hash, so neighbouring lots still vary.
+func pick_fit(kind: String, p: Vector3, s: Vector3, tint: Color = Color.WHITE) -> Dictionary:
+	var list: Array = MODELS[kind]
+	var costs: Array[float] = []
+	var best := INF
+	for path: String in list:
+		var cost := _height_cost(_load(path, Color.WHITE).aabb, s)
+		costs.append(cost)
+		best = minf(best, cost)
+	var shortlist: Array = []
+	for i in costs.size():
+		if costs[i] <= best + 0.25:
+			shortlist.append(list[i])
+	var idx := absi(int(p.x * 73.1) * 31 + int(p.z * 131.7)) % shortlist.size()
+	return _load(shortlist[idx], tint)
+
+
+## |log| of the vertical stretch the footprint fit would apply (0 = perfect).
+## Mirrors the fit in EdibleFactory._add_model.
+static func _height_cost(a: AABB, s: Vector3) -> float:
+	var rot: bool = absf(s.x - s.z) > 0.3 and (a.size.x > a.size.z) != (s.x > s.z)
+	var ax: float = a.size.z if rot else a.size.x
+	var az: float = a.size.x if rot else a.size.z
+	var k: float = minf(s.x / maxf(ax, 0.001), s.z / maxf(az, 0.001))
+	var f: float = s.y / maxf(a.size.y * k, 0.001)
+	return absf(log(clampf(f, 0.25, 4.0)))
+
+
 func _load(path: String, tint: Color) -> Dictionary:
 	var key := path + "|" + tint.to_html(false)
 	if _cache.has(key):
