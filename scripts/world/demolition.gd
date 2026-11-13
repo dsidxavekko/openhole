@@ -59,7 +59,10 @@ func _key(e: Edible) -> String:
 	if e.has_meta("frac_key"):
 		return e.get_meta("frac_key")
 	var variant := absi(int(e.position.x * 7.0) + int(e.position.z * 13.0)) % VARIANTS
-	return "%s|%d|%d" % [e.model_path, DebrisRules.piece_count(e.kind, e.size), variant]
+	# The tint is part of the key: the same model in two colours gets its own
+	# chunk meshes, so the debris keeps the colour of the building it came from.
+	return "%s|%d|%d|%s" % [e.model_path, DebrisRules.piece_count(e.kind, e.size), variant,
+		e.model_tint.to_html(false)]
 
 
 func _model(path: String) -> Dictionary:
@@ -104,7 +107,7 @@ func _pieces(e: Edible) -> Array:
 	var mats: Array = _model(e.model_path).mats
 	var out := []
 	for pc: Dictionary in raw:
-		var mesh := _build_mesh(pc, mats)
+		var mesh := _build_mesh(pc, mats, e.model_tint)
 		if mesh == null:
 			continue
 		var hull: PackedVector3Array = pc.hull
@@ -117,7 +120,7 @@ func _pieces(e: Edible) -> Array:
 	return out
 
 
-func _build_mesh(pc: Dictionary, mats: Array) -> ArrayMesh:
+func _build_mesh(pc: Dictionary, mats: Array, tint: Color) -> ArrayMesh:
 	var mesh := ArrayMesh.new()
 	for i in pc.soups.size():
 		var s: Dictionary = pc.soups[i]
@@ -129,7 +132,7 @@ func _build_mesh(pc: Dictionary, mats: Array) -> ArrayMesh:
 		arr[Mesh.ARRAY_NORMAL] = s.n
 		arr[Mesh.ARRAY_TEX_UV] = s.uv
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
-		mesh.surface_set_material(mesh.get_surface_count() - 1, _double_sided(mats[i]))
+		mesh.surface_set_material(mesh.get_surface_count() - 1, _double_sided(mats[i], tint))
 	if not pc.cap.p.is_empty():
 		var cols := PackedColorArray()
 		cols.resize(pc.cap.p.size())
@@ -149,15 +152,14 @@ func _build_mesh(pc: Dictionary, mats: Array) -> ArrayMesh:
 
 
 ## Kenney models are open shells: a chunk shows its inside, so draw both sides.
-func _double_sided(m: Material) -> Material:
+## The copy also takes the body's tint (ThemePalettes.chunk_material), so chunks
+## of a painted building keep their colour.
+func _double_sided(m: Material, tint: Color) -> Material:
 	if m == null:
 		return null
-	var id := m.get_instance_id()
+	var id := "%d|%s" % [m.get_instance_id(), tint.to_html(false)]
 	if not _mats.has(id):
-		var c := m.duplicate() as Material
-		if c is BaseMaterial3D:
-			(c as BaseMaterial3D).cull_mode = BaseMaterial3D.CULL_DISABLED
-		_mats[id] = c
+		_mats[id] = ThemePalettes.chunk_material(m, tint)
 	return _mats[id]
 
 

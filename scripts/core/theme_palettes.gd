@@ -45,8 +45,6 @@ const SUBURB := CITY
 const NIGHT := CITY
 const MEXICO := {
 	"building": BUILDING_MEXICO,
-	# Mexico has no suburban houses: its layout is all small flat-roofed blocks.
-	"house": HOUSE_STOCK,
 	"car": CAR_MEXICO,
 	"shirt": SHIRT_CITY,
 	"car_tint": Color(1.0, 0.84, 0.62),
@@ -65,3 +63,17 @@ static func for_theme(theme: int) -> Dictionary:
 		2: return NIGHT
 		3: return MEXICO
 		_: return CITY
+
+
+## A double-sided copy of `m` with the palette tint applied; the source is
+## never changed. Debris chunks use this so a painted building does not pop
+## back to the stock Kenney colours when it breaks.
+static func chunk_material(m: Material, tint: Color) -> Material:
+	if m == null:
+		return null
+	var c := m.duplicate() as Material
+	if c is BaseMaterial3D:
+		(c as BaseMaterial3D).cull_mode = BaseMaterial3D.CULL_DISABLED
+		if tint != Color.WHITE:
+			(c as BaseMaterial3D).albedo_color = (c as BaseMaterial3D).albedo_color * tint
+	return c

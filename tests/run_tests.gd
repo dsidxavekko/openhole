@@ -156,6 +156,10 @@ func _init() -> void:
 	_check(_hash(a) == _hash(b), "same seed gives same city")
 	_check(_hash(a) != _hash(c), "different seed gives different city")
 	_check(_hash(a) != _hash(s), "suburb theme differs from city")
+	# Pinned layout fingerprints: a change to the rng draw order in CityGen would
+	# silently rebuild every old seed, so it has to fail loudly instead.
+	_check(_hash(a) == 3394065743, "city seed 42 layout is pinned")
+	_check(_hash(s) == 2573031902, "suburb seed 42 layout is pinned")
 	var mex := CityGen.generate(42, 5, 3)
 	_check(_hash(mex) != _hash(a) and _hash(mex) != _hash(s), "mexico theme differs from city and suburb")
 	var mex_houses := 0
@@ -205,9 +209,11 @@ func _init() -> void:
 	_check(pal_mexico.building.size() >= 4, "mexico palette has building colours")
 	_check(pal_mexico.car_tint != Color.WHITE and pal_mexico.prop_tint != Color.WHITE, "mexico washes models")
 	_check(ThemePalettes.for_theme(2) == pal_city, "night keeps the city palette")
-	for key in ["building", "house", "car", "shirt", "car_tint", "person_tint", "prop_tint"]:
+	var keys_mexico := ["building", "car", "shirt", "car_tint", "person_tint", "prop_tint"]
+	for key in keys_mexico:
 		if not pal_mexico.has(key):
 			_check(false, "mexico palette has %s" % key)
+	_check(not pal_mexico.has("house"), "mexico palette has no house colours")
 
 	print("ModelLibrary")
 	var lib := ModelLibrary.new()
@@ -227,12 +233,19 @@ func _init() -> void:
 	stock_inst.free()
 	warm_inst.free()
 	var fitted: Dictionary = lib.pick_fit("building", Vector3(1, 0, 2), Vector3(9, 12, 9))
-	var fa: AABB = fitted.aabb
-	var fk: float = minf(9.0 / maxf(fa.size.x, 0.001), 9.0 / maxf(fa.size.z, 0.001))
-	var ff: float = 12.0 / maxf(fa.size.y * fk, 0.001)
-	_check(ff > 0.75 and ff < 1.35, "picked building needs little stretch (%.2f)" % ff)
+	var ff: float = ModelLibrary.fit_spec(fitted.aabb, Vector3(9, 12, 9)).f
+	_check(absf(log(ff)) < 0.6, "picked building needs little stretch (%.2f)" % ff)
 	_check(lib.pick_fit("building", Vector3(1, 0, 2), Vector3(9, 12, 9)).scene == fitted.scene,
 		"fit pick is deterministic")
+
+	print("Debris tint")
+	var src := StandardMaterial3D.new()
+	src.albedo_color = Color(0.8, 0.8, 0.8)
+	var warm := ThemePalettes.chunk_material(src, Color(1.0, 0.5, 0.5)) as BaseMaterial3D
+	var stock := ThemePalettes.chunk_material(src, Color.WHITE) as BaseMaterial3D
+	_check(warm.albedo_color.is_equal_approx(Color(0.8, 0.4, 0.4)), "chunk materials take the tint")
+	_check(src.albedo_color.is_equal_approx(Color(0.8, 0.8, 0.8)), "chunk source material stays untouched")
+	_check(warm.cull_mode == BaseMaterial3D.CULL_DISABLED and stock != warm, "chunks stay double-sided per tint")
 
 	print("Fracture")
 	var box_mesh := BoxMesh.new()

@@ -49,7 +49,7 @@ func _ready() -> void:
 	# Dev helper for screenshots: "-- --theme=city|suburb|night|mexico" overrides the theme without saving.
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--theme="):
-			map_theme = clampi(["city", "suburb", "night", "mexico"].find(arg.trim_prefix("--theme=").to_lower()), 0, 3)
+			map_theme = clampi(["city", "suburb", "night", "mexico"].find(arg.trim_prefix("--theme=").to_lower()), 0, THEME_KEYS.size() - 1)
 	bot_count = clampi(Save.get_setting("bots", 7), MIN_BOTS, MAX_BOTS)
 	difficulty = clampi(Save.get_setting("difficulty", Difficulty.NORMAL), 0, 2)
 	vibration = Save.get_setting("vibration", true)

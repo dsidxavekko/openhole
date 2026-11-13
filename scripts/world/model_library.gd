@@ -47,9 +47,22 @@ const MODELS := {
 
 ## Kinds scaled by height (thin things); everything else is fitted to its footprint.
 const FIT_HEIGHT := ["person", "tree", "lamp", "sign", "tlight", "cone", "pot", "flower"]
+## How far a building may be stretched vertically after the height fit.
+const BUILDING_STRETCH := Vector2(0.85, 1.35)
+## How many close-fitting models pick_fit() keeps for the variety hash.
+const FIT_CHOICES := 4
 
 var _cache := {}
 var _aabbs := {}
+static var _shared: ModelLibrary = null
+
+
+## One library per process: tinted scenes are packed once and survive a match,
+## otherwise every match start pays the packing again (a hitch on phones).
+static func shared() -> ModelLibrary:
+	if _shared == null:
+		_shared = ModelLibrary.new()
+	return _shared
 
 
 func has_kind(kind: String) -> bool:
@@ -65,33 +78,38 @@ func pick(kind: String, p: Vector3, tint: Color = Color.WHITE) -> Dictionary:
 
 
 ## Like pick(), but prefers models whose height fits `s` without much vertical
-## stretching (buildings): the model is chosen among the closest fits by the
-## same position hash, so neighbouring lots still vary.
+## stretching (buildings): the FIT_CHOICES closest models are kept and the
+## position hash chooses among them, so neighbouring lots still vary.
 func pick_fit(kind: String, p: Vector3, s: Vector3, tint: Color = Color.WHITE) -> Dictionary:
 	var list: Array = MODELS[kind]
 	var costs: Array[float] = []
-	var best := INF
 	for path: String in list:
-		var cost := _height_cost(_load(path, Color.WHITE).aabb, s)
-		costs.append(cost)
-		best = minf(best, cost)
+		costs.append(_height_cost(_load(path, Color.WHITE).aabb, s))
+	var order := range(list.size())
+	order.sort_custom(func(a: int, b: int) -> bool:
+		return costs[a] < costs[b] if costs[a] != costs[b] else a < b)
 	var shortlist: Array = []
-	for i in costs.size():
-		if costs[i] <= best + 0.25:
-			shortlist.append(list[i])
+	for i in mini(FIT_CHOICES, order.size()):
+		shortlist.append(list[order[i]])
 	var idx := absi(int(p.x * 73.1) * 31 + int(p.z * 131.7)) % shortlist.size()
 	return _load(shortlist[idx], tint)
 
 
 ## |log| of the vertical stretch the footprint fit would apply (0 = perfect).
-## Mirrors the fit in EdibleFactory._add_model.
 static func _height_cost(a: AABB, s: Vector3) -> float:
-	var rot: bool = absf(s.x - s.z) > 0.3 and (a.size.x > a.size.z) != (s.x > s.z)
-	var ax: float = a.size.z if rot else a.size.x
-	var az: float = a.size.x if rot else a.size.z
+	return absf(log(clampf(fit_spec(a, s).f, 0.25, 4.0)))
+
+
+## Footprint fit of a model AABB to a target size, shared by the picker above
+## and EdibleFactory._add_model so the two can never drift apart.
+## k is the uniform scale; f the extra vertical factor for buildings.
+static func fit_spec(a: AABB, s: Vector3) -> Dictionary:
+	var rot90: bool = absf(s.x - s.z) > 0.3 and (a.size.x > a.size.z) != (s.x > s.z)
+	var ax: float = a.size.z if rot90 else a.size.x
+	var az: float = a.size.x if rot90 else a.size.z
 	var k: float = minf(s.x / maxf(ax, 0.001), s.z / maxf(az, 0.001))
 	var f: float = s.y / maxf(a.size.y * k, 0.001)
-	return absf(log(clampf(f, 0.25, 4.0)))
+	return {"rot90": rot90, "k": k, "f": f}
 
 
 func _load(path: String, tint: Color) -> Dictionary:
@@ -114,6 +132,8 @@ func _load(path: String, tint: Color) -> Dictionary:
 		var packed := PackedScene.new()
 		if packed.pack(probe) == OK:
 			scene = packed
+		else:
+			push_warning("Could not pack the tinted model %s, using stock colours" % path)
 		probe.free()
 	var info := {"path": ROOT + path + ".glb", "scene": scene, "aabb": _aabbs[path]}
 	_cache[key] = info

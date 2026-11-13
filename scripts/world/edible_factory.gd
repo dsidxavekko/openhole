@@ -10,9 +10,7 @@ const SMALL_VIS_RANGE := 70.0
 
 ## Night theme: dark primitive materials (no shader work).
 var night := false
-## Match theme (GameState.MapTheme value): picks the model tints.
-var theme := 0
-var library := ModelLibrary.new()
+var library := ModelLibrary.shared()
 var _palette: Dictionary = ThemePalettes.for_theme(0)
 var _materials := {}
 var _shapes := {}
@@ -35,7 +33,6 @@ func _init() -> void:
 
 
 func set_theme(value: int) -> void:
-	theme = value
 	_palette = ThemePalettes.for_theme(value)
 
 
@@ -133,17 +130,14 @@ func _add_model(e: Edible, model_kind: String, kind: String, s: Vector3, p: Vect
 	if kind in ModelLibrary.FIT_HEIGHT:
 		sc = Vector3.ONE * (s.y / a.size.y)
 	else:
-		# Line up the longest horizontal sides of the model and the spec.
-		if absf(s.x - s.z) > 0.3 and (a.size.x > a.size.z) != (s.x > s.z):
-			rot90 = true
-		var ax := a.size.z if rot90 else a.size.x
-		var az := a.size.x if rot90 else a.size.z
-		var k := minf(s.x / ax, s.z / az)
+		var fit := ModelLibrary.fit_spec(a, s)
+		rot90 = fit.rot90
+		var k: float = fit.k
 		sc = Vector3(k, k, k)
 		if kind == "building":
 			# pick_fit already chose a model close to the target height; the
 			# clamp only limits the remaining stretch.
-			sc.y = k * clampf(s.y / (a.size.y * k), 0.85, 1.35)
+			sc.y = k * clampf(fit.f, ModelLibrary.BUILDING_STRETCH.x, ModelLibrary.BUILDING_STRETCH.y)
 
 	var holder := Node3D.new()
 	holder.rotation.y = PI / 2.0 if rot90 else 0.0
@@ -157,6 +151,7 @@ func _add_model(e: Edible, model_kind: String, kind: String, s: Vector3, p: Vect
 	e.model_path = info.path
 	e.model_basis = holder.transform.basis
 	e.model_center = a.get_center()
+	e.model_tint = tint
 
 	var size := Vector3(a.size.x * sc.x, a.size.y * sc.y, a.size.z * sc.z)
 	if rot90:

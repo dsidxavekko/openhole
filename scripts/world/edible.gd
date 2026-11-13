@@ -19,10 +19,13 @@ var cell := Vector2i.ZERO
 ## Falls apart into chunks (see Demolition). Set by EdibleFactory.
 var breakable := false
 ## Model used to cut chunks: res path, and how the model sits in the body
-## (body-local = model_basis * (model_point - model_center)).
+## (body-local = model_basis * (model_point - model_center)). `model_tint`
+## multiplies the material colours, so the chunks of a tinted building keep
+## their colour instead of popping back to the stock Kenney palette.
 var model_path := ""
 var model_basis := Basis.IDENTITY
 var model_center := Vector3.ZERO
+var model_tint := Color.WHITE
 ## Chunks only: points of the whole thing they came from, fraction of the
 ## original city item (`weight`), the other chunks this one holds up, and how
 ## many chunks still hold this one up.
