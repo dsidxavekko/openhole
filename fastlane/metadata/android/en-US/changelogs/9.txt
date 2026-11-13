@@ -1,0 +1,1 @@
+New Mexico City map: warm sand, terracotta low-rise blocks and a low golden sun — the fourth map in Settings and in the Daily Challenge. Buildings now pick models that fit their height instead of being stretched, cars, people and props take colours from the map palette, and debris keeps the colour of the building it came from.
