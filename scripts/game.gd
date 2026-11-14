@@ -1412,7 +1412,8 @@ func _percent() -> float:
 	return minf(100.0, 100.0 * eaten_weight / maxf(total_count, 1))
 
 
-## Shift summary for the results screen (it only matters against other holes).
+## Shift summary for the results screen (holes eaten in Shift needs rivals,
+## but the used-Shifts line is useful in Solo and the Daily too).
 func _append_shift_stats(lines: Array) -> void:
 	if player.shifts_used > 0:
 		lines.append(tr("SHIFT_USED") % player.shifts_used)
@@ -1452,10 +1453,13 @@ func _finish() -> void:
 				title = tr("DAILY_DONE")
 			lines.append(tr("CITY_EATEN") % pct)
 			lines.append(tr("POINTS") % player.points)
+			_append_shift_stats(lines)
 			if save:
 				record = Save.submit_record(key, pct)
 				if GameState.daily:
 					Save.submit_record("solo", pct)
+					if player.shifts_used > 0:
+						Save.add_counter(GameState.daily_shifts_key(), player.shifts_used)
 		GameState.Mode.CLASSIC:
 			var place := _ranking().find(player) + 1
 			title = tr("YOU_WIN") if place == 1 else tr("PLACE") % place

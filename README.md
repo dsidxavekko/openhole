@@ -39,7 +39,8 @@ count towards the Phase skin.
 - **Solo** — alone, eat as much of the city as you can in 2 minutes.
 - **Battle** — last hole standing; the safe zone shrinks.
 
-- **Daily challenge** — Solo on a city that is the same for everyone that day.
+- **Daily challenge** — Solo on a city that is the same for everyone that day;
+  the menu card also counts the Shifts you used on it today.
 
 Power-ups: magnet, speed, giant (+2 levels for a while), shield (cannot be eaten).
 They pause while you are shifted.

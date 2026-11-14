@@ -187,9 +187,13 @@ func _fill_cards() -> void:
 	for c in _cards.get_children():
 		c.queue_free()
 	var daily_best := Save.get_record(GameState.daily_key())
+	var daily_shifts := int(Save.get_record(GameState.daily_shifts_key()))
+	var daily_right := tr("BEST_TODAY") % ("%.1f%%" % daily_best) if daily_best > 0 else _today()
+	if daily_shifts > 0:
+		daily_right += "  ·  " + tr("SHIFTS_TODAY") % daily_shifts
 	var specs := [
 		{"title": tr("DAILY"), "desc": tr("DESC_DAILY"), "color": UiTheme.CARD_DAILY, "icon": "daily",
-			"right": tr("BEST_TODAY") % ("%.1f%%" % daily_best) if daily_best > 0 else _today(),
+			"right": daily_right,
 			"go": _start.bind(GameState.Mode.SOLO, true)},
 		{"title": tr("MODE_CLASSIC"), "desc": tr("DESC_CLASSIC") % GameState.bot_count, "color": UiTheme.CARD_CLASSIC,
 			"icon": "classic", "right": _best("%d" % int(Save.get_record("classic"))),

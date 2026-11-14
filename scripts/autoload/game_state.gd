@@ -105,6 +105,11 @@ func daily_key() -> String:
 	return "daily_%d" % daily_seed()
 
 
+## Shift uses accumulated in today's Daily runs.
+func daily_shifts_key() -> String:
+	return "daily_shifts_%d" % daily_seed()
+
+
 func daily_seed() -> int:
 	var d := Time.get_date_dict_from_system()
 	return d.year * 10000 + d.month * 100 + d.day
