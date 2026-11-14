@@ -1,4 +1,4 @@
-# Draft of the fdroiddata recipe (metadata/org.openhole.game.yml). Not submitted yet.
+# fdroiddata recipe (metadata/org.openhole.game.yml), submitted as MR !57363 in fdroid/fdroiddata.
 # Modelled on the Godot template in fdroiddata (templates/build-godot.yml) and on existing
 # Godot 4 recipes (e.g. com.game.Cascada). F-Droid builds from source only, so the editor and
 # the Android export template are compiled from the Godot sources (srclib Godot@4.7.2-stable).
@@ -21,7 +21,7 @@ Repo: https://github.com/dsidxavekko/openhole.git
 Builds:
   - versionName: 0.5.5
     versionCode: 11
-    commit: v0.5.5
+    commit: a68a1db74bea4631b296f5006c7a9cf3f73ec8c1
     timeout: 14400
     sudo:
       - apt-get update
