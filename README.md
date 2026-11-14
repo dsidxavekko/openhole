@@ -6,8 +6,8 @@ that swallows a procedurally generated city. Built with Godot 4.7 for Android
 
 <p>
   <img src="docs/screenshots/menu.png" width="240" alt="Main menu">
-  <img src="docs/screenshots/match.png" width="240" alt="A big hole swallowing a park">
-  <img src="docs/screenshots/shift.png" width="240" alt="Shift: the hole turns small and purple">
+  <img src="docs/screenshots/match.png" width="240" alt="A big hole collapsing a building">
+  <img src="docs/screenshots/shift.png" width="240" alt="Shift: roles swapped, the hole turns small">
 </p>
 
 ## Game Off 2026 — Theme: SHIFT

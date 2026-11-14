@@ -50,14 +50,20 @@ And the bots know it too: on **Normal** difficulty they shift sparingly (about
 once per half a minute), and on **Hard** they use it freely — they slip away from
 a bigger hole at the last moment, or dive into one that got careless. In Classic
 the bot you shift-eat comes back out for revenge and hunts you for a while. Land
-a Shift kill yourself and the game drops into a short slow-motion close-up; every
-hole-vs-hole kill shows up in a kill feed, kills in quick succession build a swap
-chain worth up to +100 % points, the results screen counts your Shifts and Shift
-kills, and three Shift kills unlock the purple **Phase** skin. The very first
-match shows a one-time hint pointing at the button.
+a Shift kill yourself and the game drops into a short slow-motion close-up, while
+the swallowed hole implodes into a shockwave that cracks nearby buildings and
+throws chunks around. Every hole-vs-hole kill shows up in a kill feed, kills in
+quick succession build a swap chain worth up to +100 % points, the results screen
+counts your Shifts, Shift kills, biggest bite and best combo, and three Shift
+kills unlock the purple **Phase** skin. The very first match teaches Shift: a
+bigger hole appears close by and time slows down until you press the button.
 
 ## What's new since launch
 
+- **v0.5.5** — a Shift kill implodes into a shockwave that cracks buildings and
+  throws chunks; the first match teaches Shift with a bigger hole and slow motion;
+  the results screen shows your biggest bite, best combo and best swap chain;
+  gamepad support and keyboard/gamepad menu navigation.
 - **v0.5.0** — bots on Normal shift too (sparingly); shift-eaten bots in Classic
   come back out for revenge; quick Shift kills build a swap chain worth up to
   +100 % points; a one-time SHIFT hint in the first match; the Daily card counts
@@ -75,6 +81,7 @@ match shows a one-time hint pointing at the button.
 
 - **Touch:** drag anywhere to move (floating joystick). **SHIFT** button in the bottom-left corner.
 - **PC / browser:** WASD or arrow keys to move (mouse drag works too). **Shift** key to shift.
+- **Gamepad:** left stick or D-pad to move, X / RB / right trigger for Shift, Start to pause; the menus work with the D-pad and A / B.
 
 ## Credits
 
