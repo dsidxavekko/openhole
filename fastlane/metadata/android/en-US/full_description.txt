@@ -1,7 +1,7 @@
 You are a hole in the ground. Swallow people, cars, trees and whole buildings, grow bigger and eat a procedurally generated city before the time runs out.
 
 <b>SHIFT: swap roles</b>
-Press SHIFT and for 3.5 seconds your hole turns small and fast. Nobody can eat you, you eat nothing of the city, but you swallow any other hole you dive into, however big. The hunted becomes the hunter. Then wait 8 seconds for the next one. Made for GitHub Game Off 2026 (theme: SHIFT).
+Press SHIFT and for 3.5 seconds your hole turns small and fast. Nobody can eat you, you eat nothing of the city, but you swallow any other hole you dive into, however big. The hunted becomes the hunter. Then wait 8 seconds for the next one. Shift kills in quick succession build a swap chain worth up to +100 % points, and in Classic the bot you shift-eat comes back out for revenge. Bots shift too: sparingly on Normal, freely on Hard. Made for GitHub Game Off 2026 (theme: SHIFT).
 
 <b>Modes</b>
 <ul>
