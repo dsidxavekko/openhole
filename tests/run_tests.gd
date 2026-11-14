@@ -96,6 +96,19 @@ func _init() -> void:
 	combo_hole.combo = 0
 	_check(combo_hole.best_combo == 3, "best combo survives a reset")
 
+	print("Gamepad")
+	_check(Gamepad.apply_deadzone(Vector2(0.1, -0.1)) == Vector2.ZERO, "a stick inside the dead zone gives nothing")
+	_check(Gamepad.apply_deadzone(Vector2(1, 0)).is_equal_approx(Vector2(1, 0)), "full tilt reaches 1")
+	_check(Gamepad.apply_deadzone(Vector2(1, 1)).length() <= 1.0001, "a diagonal never exceeds 1")
+	var mid := Gamepad.apply_deadzone(Vector2(0.6, 0)).x
+	_check(mid > 0.0 and mid < 0.6, "the dead zone rescales the range")
+	Gamepad.setup_actions()
+	var shift_events := InputMap.action_get_events("shift_button").size()
+	Gamepad.setup_actions()
+	_check(InputMap.action_get_events("shift_button").size() == shift_events, "binding the pad twice adds nothing")
+	_check(shift_events >= 4, "shift has the keyboard plus pad bindings")
+	_check(InputMap.has_action("pause_button"), "pause has an action")
+
 	print("Powerup")
 	var no_shield := true
 	for i in 300:

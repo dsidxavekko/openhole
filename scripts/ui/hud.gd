@@ -7,6 +7,7 @@ signal play_again
 signal to_menu
 signal resume
 signal shift_pressed
+signal pause_pressed
 
 const BOARD_ROWS := 5
 
@@ -98,6 +99,7 @@ func _ready() -> void:
 	icon.set_anchors_preset(Control.PRESET_FULL_RECT)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_pause_button.add_child(icon)
+	_pause_button.focus_mode = Control.FOCUS_NONE
 	_pause_button.pressed.connect(func():
 		if _pause.visible:
 			resume.emit()
@@ -375,6 +377,27 @@ func has_results() -> bool:
 	return _results.visible
 
 
+## Escape / Start: pause, resume, or leave the results screen.
+func _unhandled_input(event: InputEvent) -> void:
+	if not event.is_action_pressed("pause_button"):
+		return
+	get_viewport().set_input_as_handled()
+	if has_results():
+		to_menu.emit()
+	elif is_paused():
+		resume.emit()
+	else:
+		pause_pressed.emit()
+
+
+## Puts keyboard/gamepad focus on the first button of a panel.
+func _focus_first(box: Control) -> void:
+	for c in box.get_children():
+		if c is Button and not c.is_queued_for_deletion():
+			(c as Button).grab_focus()
+			return
+
+
 func show_pause() -> void:
 	joystick.release()
 	joystick.enabled = false
@@ -393,11 +416,13 @@ func _fill_pause(with_settings: bool) -> void:
 	if with_settings:
 		_pause_box.add_child(SettingsPanel.new(false))
 		_pause_box.add_child(_button(tr("BACK"), func(): _fill_pause(false)))
+		_focus_first.call_deferred(_pause_box)
 		return
 	_pause_box.add_child(UiTheme.label(tr("PAUSE"), 56, HORIZONTAL_ALIGNMENT_CENTER, 800))
 	_pause_box.add_child(_button(tr("CONTINUE"), func(): resume.emit()))
 	_pause_box.add_child(_button(tr("SETTINGS"), func(): _fill_pause(true)))
 	_pause_box.add_child(_button(tr("MENU"), func(): to_menu.emit()))
+	_focus_first.call_deferred(_pause_box)
 
 
 func _button(text: String, action: Callable) -> Button:
@@ -436,6 +461,7 @@ func show_results(title: String, lines: Array) -> void:
 	_results_box.add_child(_button(tr("PLAY_AGAIN"), func(): play_again.emit()))
 	_results_box.add_child(_button(tr("MENU"), func(): to_menu.emit()))
 	_results.visible = true
+	_focus_first.call_deferred(_results_box)
 	_results.pivot_offset = _results.size / 2.0
 	_results.scale = Vector2(0.8, 0.8)
 	_results.modulate.a = 0.0

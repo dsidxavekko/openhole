@@ -39,6 +39,7 @@ var skin := 0
 
 
 func _ready() -> void:
+	Gamepad.setup_actions()
 	autoplay = "--autoplay" in OS.get_cmdline_user_args()
 	var lang: String = Save.get_setting("lang", "")
 	if lang == "":
@@ -148,3 +149,13 @@ func bot_chase_start() -> float:
 
 func bot_shift_gap() -> float:
 	return BOT_SHIFT_GAP[difficulty]
+
+
+## The focus ring only shows while the player navigates with keys or a pad;
+## touches and the mouse hide it.
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey or event is InputEventJoypadButton \
+			or (event is InputEventJoypadMotion and absf(event.axis_value) > 0.5):
+		UiTheme.set_nav_visible(true)
+	elif event is InputEventMouseButton or event is InputEventScreenTouch:
+		UiTheme.set_nav_visible(false)

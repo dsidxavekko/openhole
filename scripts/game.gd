@@ -125,6 +125,7 @@ func _ready() -> void:
 	hud.to_menu.connect(_go_menu)
 	hud.resume.connect(resume)
 	hud.shift_pressed.connect(_player_shift)
+	hud.pause_pressed.connect(pause)
 	_update_hud()
 	# `--tutorial` forces the lesson (dev/smoke) even if it was already seen.
 	var force_lesson := OS.get_cmdline_user_args().has("--tutorial")
@@ -592,6 +593,9 @@ func _player_input() -> Vector2:
 	if Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN): k.y += 1
 	if k != Vector2.ZERO:
 		return k.normalized()
+	var pad := Gamepad.move_vector()
+	if pad != Vector2.ZERO:
+		return pad
 	if v == Vector2.ZERO:
 		return Vector2.ZERO
 	return v.normalized() * clampf(v.length() * 1.6, 0.0, 1.0)

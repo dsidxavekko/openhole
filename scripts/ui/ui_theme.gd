@@ -14,6 +14,7 @@ const CARD_BATTLE := Color("e5383b")
 const CARD_DAILY := Color("7b4fd6")
 
 static var _font_cache := {}
+static var _focus_ring: StyleBoxFlat = null
 
 
 ## Rubik at the given weight (400 regular .. 900 black). Null if the font is missing.
@@ -29,6 +30,23 @@ static func font(weight := 500) -> Font:
 		f = v
 	_font_cache[weight] = f
 	return f
+
+
+## One shared outline for keyboard/gamepad focus; invisible until
+## `set_nav_visible(true)`.
+static func focus_ring() -> StyleBoxFlat:
+	if _focus_ring == null:
+		_focus_ring = StyleBoxFlat.new()
+		_focus_ring.draw_center = false
+		_focus_ring.set_border_width_all(6)
+		_focus_ring.set_corner_radius_all(30)
+		_focus_ring.border_color = Color(1, 1, 1, 0)
+		_focus_ring.set_expand_margin_all(3)
+	return _focus_ring
+
+
+static func set_nav_visible(on: bool) -> void:
+	focus_ring().border_color = Color(ACCENT, 1.0 if on else 0.0)
 
 
 static func clear_cache() -> void:
@@ -61,7 +79,7 @@ static func make() -> Theme:
 	t.set_stylebox("hover", "Button", hover)
 	t.set_stylebox("pressed", "Button", pressed)
 	t.set_stylebox("disabled", "Button", btn)
-	t.set_stylebox("focus", "Button", StyleBoxEmpty.new())
+	t.set_stylebox("focus", "Button", focus_ring())
 	t.set_font_size("font_size", "Button", 34)
 
 	var panel := rounded(PANEL, 28)
@@ -141,7 +159,7 @@ static func sheet() -> StyleBoxFlat:
 static func style_button(b: Button, normal: StyleBox, pressed: StyleBox = null) -> void:
 	b.add_theme_stylebox_override("normal", normal)
 	b.add_theme_stylebox_override("hover", normal)
-	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	b.add_theme_stylebox_override("focus", focus_ring())
 	b.add_theme_stylebox_override("pressed", pressed if pressed else normal)
 	b.add_theme_stylebox_override("hover_pressed", pressed if pressed else normal)
 

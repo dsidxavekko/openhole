@@ -211,6 +211,21 @@ func _fill_cards() -> void:
 		var tw := card.create_tween()
 		tw.tween_interval(0.06 * i)
 		tw.tween_property(card, "modulate:a", 1.0, 0.25)
+	_focus_first_card.call_deferred()
+
+
+## Keyboard/gamepad start on the first mode card (the ring stays hidden for touch).
+func _focus_first_card() -> void:
+	if _cards.get_child_count() > 0 and (_sheet == null):
+		(_cards.get_child(0) as Control).grab_focus()
+
+
+## B / Escape closes an open sheet.
+func _unhandled_input(event: InputEvent) -> void:
+	if _sheet != null and (event.is_action_pressed("ui_cancel") or event.is_action_pressed("pause_button")):
+		get_viewport().set_input_as_handled()
+		Sfx.play("ui")
+		_close_sheet()
 
 
 func _best(value: String) -> String:
@@ -349,6 +364,7 @@ func _open_sheet(content: Control) -> void:
 		_close_sheet())
 	box.add_child(close)
 	_sheet_layer.add_child(_sheet)
+	close.grab_focus()
 	_sheet_layer.visible = true
 	_sheet_layer.modulate.a = 0.0
 	# Slide up from below the screen.
@@ -378,7 +394,8 @@ func _close_sheet() -> void:
 		if is_instance_valid(s):
 			s.queue_free()
 		if _sheet == null:
-			_sheet_layer.visible = false)
+			_sheet_layer.visible = false
+			_focus_first_card())
 
 
 func _spacer(h: float) -> Control:
