@@ -37,8 +37,8 @@ Builds:
       - export SCONS="scons -j `nproc` verbose=no warnings=no progress=no"
       - pushd $$Godot$$
       - $SCONS platform=linuxbsd target=editor
-      - $SCONS platform=android target=template_release arch=arm64 production=yes swappy=no
-        generate_android_binaries=yes generate_apk=yes
+      - $SCONS platform=android target=template_release arch=arm64 production=yes
+        swappy=no generate_android_binaries=yes generate_apk=yes
       - popd
       - sed -i -e 's:\(^.*package/signed\)\s*=.*$:\1 = false:' export_presets.cfg
       - sed -i -e '/custom_template\/release/s|=.*|="$$Godot$$/bin/android_release.apk"|'
