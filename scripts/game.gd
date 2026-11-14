@@ -81,6 +81,10 @@ var _frame_ms_sum := 0.0
 var _frames := 0
 ## The one-time "press SHIFT" hint is up (first ever match).
 var _hint_shown := false
+## Player shift kills in quick succession (see HoleRules.SHIFT_CHAIN_WINDOW).
+var _shift_chain := 0
+var _shift_chain_timer := 0.0
+var _shift_chain_max := 0
 
 
 func _ready() -> void:
@@ -423,6 +427,10 @@ func _physics_process(delta: float) -> void:
 	else:
 		time_left -= delta
 	_vibrate_cooldown -= delta
+	if _shift_chain_timer > 0.0:
+		_shift_chain_timer -= delta
+		if _shift_chain_timer <= 0.0:
+			_shift_chain = 0
 
 	if player.alive:
 		if _player_bot:
@@ -1161,7 +1169,18 @@ func _eat_hole(a: Hole, b: Hole) -> void:
 	var shifted := a.is_shifted()
 	if shifted:
 		a.holes_eaten_shifted += 1
-	a.add_points(maxi(5, b.points / 2))
+	var base := maxi(5, b.points / 2)
+	a.add_points(base)
+	# Swap chain: the player's shift kills in quick succession pay extra.
+	var chain_bonus := 0
+	if shifted and a == player:
+		_shift_chain += 1
+		_shift_chain_max = maxi(_shift_chain_max, _shift_chain)
+		_shift_chain_timer = HoleRules.SHIFT_CHAIN_WINDOW
+		chain_bonus = HoleRules.chain_bonus(base, _shift_chain)
+		if chain_bonus > 0:
+			a.add_points(chain_bonus)
+			hud.feed(tr("FEED_CHAIN") % _shift_chain, a.color)
 	b.set_alive(false)
 	hud.feed(tr("FEED_SHIFT" if shifted else "FEED_EAT") % [a.hole_name, b.hole_name], a.color)
 	if shifted and a == player and mode == GameState.Mode.CLASSIC and b.controller is BotAI:
@@ -1173,10 +1192,14 @@ func _eat_hole(a: Hole, b: Hole) -> void:
 		GameState.vibrate(80)
 		Sfx.play("eat_hole")
 		_add_shake(0.6)
-		_popup(a, "+%d" % maxi(5, b.points / 2), Color("80ed99"))
+		_popup(a, "+%d" % base, Color("80ed99"))
+		if chain_bonus > 0:
+			_popup(a, "+%d" % chain_bonus, Powerup.COLORS[Powerup.Kind.SHIFT])
 		if shifted:
 			_shift_kill_slowmo()
 	if _me(b):
+		# The player is gone: the chain is broken.
+		_shift_chain = 0
 		Sfx.play("eaten")
 		GameState.vibrate(200)
 		_add_shake(0.8)
@@ -1476,9 +1499,9 @@ func _finish() -> void:
 		all_powerups += h.powerups_taken
 		if h != player:
 			bot_shifts += h.shifts_used
-	print("MATCH_END mode=%s points=%d eaten=%d/%d city=%.1f%% items=%d level=%d powerups=%d/%d movers_left=%d flung=%d best_item=%d fractured=%d debris_peak=%d frame_ms=%.2f shifts=%d shift_eats=%d bot_shifts=%d" % [key,
+	print("MATCH_END mode=%s points=%d eaten=%d/%d city=%.1f%% items=%d level=%d powerups=%d/%d movers_left=%d flung=%d best_item=%d fractured=%d debris_peak=%d frame_ms=%.2f shifts=%d shift_eats=%d chain_max=%d bot_shifts=%d" % [key,
 		player.points, eaten_count, total_count, _percent(), roundi(eaten_weight), player.level, player.powerups_taken, all_powerups, movers.size(),
 		_flung.size(), _best_item, demolition.fractured, demolition.debris_peak, _frame_ms_sum / maxf(_frames, 1),
-		player.shifts_used, player.holes_eaten_shifted, bot_shifts])
+		player.shifts_used, player.holes_eaten_shifted, _shift_chain_max, bot_shifts])
 	if GameState.autoplay:
 		get_tree().quit()

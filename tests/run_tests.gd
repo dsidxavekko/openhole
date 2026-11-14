@@ -104,6 +104,11 @@ func _init() -> void:
 	_check(not HoleRules.can_shift_eat(1.0, 10.0, 6.0), "a shifted hole must dive into the inner half")
 	_check(not HoleRules.can_shift_eat(1.0, 10.0, 9.5), "shifted hole on the rim does not eat yet")
 	_check(not HoleRules.can_shift_eat(1.0, 0.5, 9.0), "far holes are not eaten")
+	_check(HoleRules.chain_bonus(10, 1) == 0, "the first shift kill has no chain bonus")
+	_check(HoleRules.chain_bonus(10, 2) == 5, "the second shift kill pays +50 %")
+	_check(HoleRules.chain_bonus(9, 3) == 9, "the third shift kill pays +100 %")
+	_check(HoleRules.SHIFT_CHAIN_WINDOW > HoleRules.SHIFT_COOLDOWN + Powerup.DURATIONS[Powerup.Kind.SHIFT],
+		"the chain window allows back-to-back shifts")
 	var k := Powerup.Kind.SHIFT
 	_check(Powerup.DURATIONS.has(k) and Powerup.COLORS.has(k) and Powerup.NAMES.has(k), "SHIFT has duration, colour and name")
 	_check(Powerup.WEIGHTS.get(k, 0) == 0, "SHIFT has no spawn weight")

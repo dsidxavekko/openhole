@@ -72,6 +72,15 @@ const SHIFT_RADIUS_FACTOR := 0.45
 const SHIFT_SPEED_FACTOR := 1.25
 ## Seconds after a shift ends before the next one is ready.
 const SHIFT_COOLDOWN := 8.0
+## Seconds after a shift kill the next one still counts as a swap chain:
+## long enough to re-shift (cooldown + duration) and kill again.
+const SHIFT_CHAIN_WINDOW := 13.0
+
+
+## Bonus for the Nth kill of a swap chain: half the base points per kill
+## before it (chain 2 = +50 %, chain 3 = +100 %).
+static func chain_bonus(base_points: int, chain: int) -> int:
+	return int(round(base_points * 0.5 * maxi(chain - 1, 0)))
 
 
 static func shifted_radius(radius: float) -> float:
