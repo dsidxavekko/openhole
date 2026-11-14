@@ -29,6 +29,12 @@ func _ready() -> void:
 	_streams["crumble"] = _crumble(1.0, 0.8)
 	# Shift: a fast downward whoosh with a wobble, the hole shrinking.
 	_streams["shift"] = _sweep(0.38, 1100.0, 160.0, 0.15, 0.55, 14.0)
+	# Combo: a short rising chirp, played faster-pitched as the streak grows.
+	_streams["combo"] = _notes([740.0, 1108.0], 0.05, 0.1, 0.32)
+	# Boom: the low thud under a whole building collapsing into the hole.
+	_streams["boom"] = _sweep(0.55, 150.0, 36.0, 0.8, 0.8)
+	# Pop: a small bubble surfacing, for respawning holes.
+	_streams["pop"] = _sweep(0.16, 320.0, 950.0, 0.0, 0.4)
 
 
 func _exit_tree() -> void:

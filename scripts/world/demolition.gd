@@ -394,6 +394,9 @@ func _feedback(origin: Vector3, size: Vector3, points: int, h: Hole, strength: f
 		return
 	var pitch := clampf(1.3 - size.y * 0.012, 0.6, 1.3) * randf_range(0.93, 1.07)
 	Sfx.play("crumble", pitch, -1.0 if strength >= 1.0 else -5.0, 150)
+	if strength >= 1.0:
+		# A whole building going down gets a low thud under the crumble.
+		Sfx.play("boom", randf_range(0.9, 1.05), -5.0, 400)
 	game._add_shake(clampf(points / 200.0, 0.2, 0.7) * strength)
 	if strength >= 1.0 and points >= 40:
 		GameState.vibrate(clampi(20 + points / 20, 20, 80))

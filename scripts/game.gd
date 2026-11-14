@@ -907,6 +907,9 @@ func _eat_feedback(e: Edible, h: Hole, gained: int) -> void:
 	_eat_burst(e.position, h.color, e.extent)
 	var pitch := clampf(1.6 - log(float(e.points) + 1.0) * 0.18, 0.55, 1.6) * randf_range(0.93, 1.07)
 	Sfx.play("gulp_big" if big else "gulp", pitch, -4.0 if e.points < 3 else 0.0, 0 if big else 45)
+	# Combo tick: a rising chirp while a streak builds.
+	if h.combo >= 3:
+		Sfx.play("combo", clampf(1.0 + h.combo * 0.035, 1.0, 1.8), -10.0, 120)
 	if _vibrate_cooldown <= 0.0 and e.points >= 5:
 		_vibrate_cooldown = 0.25
 		GameState.vibrate(clampi(10 + e.points / 20, 10, 60))
@@ -1228,6 +1231,7 @@ func _respawn(h: Hole) -> void:
 	h.snap_radius()
 	h.reset_physics_interpolation()
 	h.set_alive(true)
+	Sfx.play("pop", randf_range(0.9, 1.1), 0.0 if h == player else -8.0, 150)
 
 
 func _zone_step(delta: float) -> void:
