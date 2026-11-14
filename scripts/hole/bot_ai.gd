@@ -7,6 +7,8 @@ enum State { WANDER, FOOD, CHASE, FLEE }
 
 const CHASE_LIMIT := 3.0
 const CHASE_COOLDOWN := 5.0
+## Seconds a shift-eaten bot hunts the player back after it returns.
+const REVENGE_TIME := 20.0
 
 var hole: Hole
 var game: Node
@@ -23,6 +25,10 @@ var _no_chase_start := 15.0
 var _frozen := 0.0
 ## Hole this bot is diving into while shifted (hard bots only).
 var _shift_target: Hole = null
+## Hole this bot hunts for revenge (the player shift-ate it).
+var _avenger: Hole = null
+## Seconds left of the revenge hunt.
+var _revenge_time := 0.0
 ## Hard bots may spend their Shift.
 var allow_shift := false
 
@@ -43,6 +49,12 @@ func freeze(seconds: float) -> void:
 	_timer = 0.0
 
 
+## The player shift-ate this bot: when it comes back, it hunts them for a while.
+func mark_revenge(target: Hole) -> void:
+	_avenger = target
+	_revenge_time = REVENGE_TIME
+
+
 func is_frozen() -> bool:
 	return _frozen > 0.0
 
@@ -54,6 +66,8 @@ func update(delta: float) -> void:
 		return
 	_age += delta
 	_chase_cooldown -= delta
+	if _revenge_time > 0.0:
+		_revenge_time -= delta
 	if allow_shift:
 		_maybe_shift()
 	if state == State.CHASE:
@@ -116,6 +130,13 @@ func _decide() -> void:
 					best_pos = opt
 			target_pos = best_pos
 		target = target_pos
+		return
+	# Revenge: the player shift-ate us and is edible the usual way — hunt them,
+	# ignoring the chase cooldown, until the grudge fades.
+	if _revenge_time > 0.0 and is_instance_valid(_avenger) and _avenger.alive \
+			and hole.radius > _avenger.radius * HoleRules.EAT_HOLE_RATIO:
+		state = State.CHASE
+		target = _avenger.position
 		return
 	if _age > _no_chase_start and _chase_cooldown <= 0.0 and randf() < skill:
 		var prey: Hole = game.find_prey(hole, 4.0 + r * 2.0)

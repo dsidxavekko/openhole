@@ -1164,6 +1164,10 @@ func _eat_hole(a: Hole, b: Hole) -> void:
 	a.add_points(maxi(5, b.points / 2))
 	b.set_alive(false)
 	hud.feed(tr("FEED_SHIFT" if shifted else "FEED_EAT") % [a.hole_name, b.hole_name], a.color)
+	if shifted and a == player and mode == GameState.Mode.CLASSIC and b.controller is BotAI:
+		# The bot comes back in a few seconds and hunts the player for a while.
+		(b.controller as BotAI).mark_revenge(player)
+		hud.feed(tr("FEED_REVENGE") % b.hole_name, b.color)
 	if _me(a):
 		hud.notice(tr("SHIFT_EAT" if shifted else "ATE_HOLE") % b.hole_name, 1.5)
 		GameState.vibrate(80)
