@@ -88,5 +88,9 @@ FEED_CHAIN,Swap chain x%d!,Ланцюг Зсувів x%d!
 FEED_ZONE,%s faded outside the zone,%s розтанув поза зоною
 SHIFT_USED,Shifts used: %d,Використано Зсувів: %d
 SHIFT_KILLS,Holes eaten in Shift: %d,Дір з'їдено на Зсуві: %d
+TUT_BIG,A big hole! It would swallow you,Велика діра! Вона тебе проковтне
+TUT_DIVE,Tap SHIFT and dive into it!,Натисни SHIFT і пірни в неї!
+TUT_DIVE2,Dive into the big hole!,Пірни у велику діру!
+TUT_DONE,That is the swap: the small one hunts!,Ось зсув: мала діра полює!
 SHIFT_HINT,Press SHIFT to swap roles!,Натисни SHIFT — зміни роль!
 SHIFTS_TODAY,Shifts: %d,Зсувів: %d

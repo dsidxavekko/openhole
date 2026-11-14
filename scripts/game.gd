@@ -81,6 +81,10 @@ var _frame_ms_sum := 0.0
 var _frames := 0
 ## The one-time "press SHIFT" hint is up (first ever match).
 var _hint_shown := false
+## First-match Shift lesson: 0 off, 1 waiting, 2 slow-mo waiting for the button, 3 diving, 4 done.
+var _tut := 0
+var _tut_time := 0.0
+var _tut_target: Hole = null
 ## Player shift kills in quick succession (see HoleRules.SHIFT_CHAIN_WINDOW).
 var _shift_chain := 0
 var _shift_chain_timer := 0.0
@@ -122,9 +126,14 @@ func _ready() -> void:
 	hud.resume.connect(resume)
 	hud.shift_pressed.connect(_player_shift)
 	_update_hud()
-	if not GameState.autoplay and not Save.get_setting("shift_hint_done", false):
+	# `--tutorial` forces the lesson (dev/smoke) even if it was already seen.
+	var force_lesson := OS.get_cmdline_user_args().has("--tutorial")
+	if force_lesson or (not GameState.autoplay and not Save.get_setting("shift_hint_done", false)):
 		_hint_shown = true
 		hud.show_shift_hint()
+		# Shift needs rivals: the lesson only runs where there are bots.
+		if mode != GameState.Mode.SOLO:
+			_tut = 1
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--screenshot="):
 			_take_screenshot(arg.trim_prefix("--screenshot="))
@@ -454,6 +463,8 @@ func _physics_process(delta: float) -> void:
 			if h.respawn_timer <= 0.0:
 				_respawn(h)
 
+	if _tut > 0 and _tut < 4:
+		_tutorial_step(delta)
 	_traffic_step(delta)
 	_powerup_step(delta)
 	_swallow_step()
@@ -1056,6 +1067,68 @@ func _rebin() -> void:
 			awake.erase(e)
 
 
+# --- Shift lesson ----------------------------------------------------------
+
+const TUT_DELAY := 12.0
+const TUT_SLOWMO := 0.35
+const TUT_SLOWMO_TIME := 6.0
+
+
+## First match only: after a while a hole bigger than the player appears close
+## by and the game slows down until the player presses SHIFT, then asks them
+## to dive into it.
+func _tutorial_step(delta: float) -> void:
+	_tut_time += delta
+	if _tut == 1:
+		if _tut_time < TUT_DELAY or not player.alive or not player.shift_ready() \
+				or Engine.time_scale != 1.0 or get_tree().paused:
+			return
+		_tut_target = _tutorial_target()
+		if _tut_target == null:
+			_tut = 4
+			return
+		_tut = 2
+		hud.notice(tr("TUT_BIG"), 3.0)
+		hud.show_shift_hint(tr("TUT_DIVE"))
+		Engine.time_scale = TUT_SLOWMO
+		# Real-time timer: gives up if the player ignores the button.
+		get_tree().create_timer(TUT_SLOWMO_TIME, true, false, true).timeout.connect(func():
+			if _tut == 2:
+				_tut = 4
+				Engine.time_scale = 1.0)
+	elif _tut == 3:
+		if not is_instance_valid(_tut_target) or not _tut_target.alive:
+			return
+		if not player.is_shifted():
+			_tut = 4
+	if _tut == 4 and _hint_shown:
+		hud.hide_shift_hint()
+
+
+## A bot made bigger than the player and parked a short way off, held still.
+func _tutorial_target() -> Hole:
+	var best: Hole = null
+	var best_d := INF
+	for h in holes:
+		if h != player and h.alive and h.controller is BotAI:
+			var d := h.position.distance_to(player.position)
+			if d < best_d:
+				best = h
+				best_d = d
+	if best == null:
+		return null
+	best.set_points(maxi(best.points, HoleRules.points_for_level(mini(player.level + 3, HoleRules.MAX_LEVEL))))
+	best.snap_radius()
+	var dir := Vector3(0, 0, -1)
+	var p := clamp_to_play_area(player.position + dir * (best.radius + 9.0))
+	if p.distance_to(player.position) < 6.0:
+		p = clamp_to_play_area(player.position - dir * (best.radius + 9.0))
+	best.position = p
+	best.reset_physics_interpolation()
+	(best.controller as BotAI).freeze(TUT_SLOWMO_TIME + HoleRules.SHIFT_COOLDOWN)
+	return best
+
+
 # --- Shift -----------------------------------------------------------------
 
 const SHIFT_FREEZE := 1.0
@@ -1069,7 +1142,12 @@ const SHIFT_KILL_SLOWMO_TIME := 0.4
 func _player_shift() -> void:
 	if not running or attract or get_tree().paused or not player.start_shift():
 		return
-	hud.notice(tr("SHIFT_ACTIVE"), 1.2)
+	if _tut == 2:
+		_tut = 3
+		Engine.time_scale = 1.0
+		hud.notice(tr("TUT_DIVE2"), 3.0)
+	else:
+		hud.notice(tr("SHIFT_ACTIVE"), 1.2)
 	hud.flash(Powerup.COLORS[Powerup.Kind.SHIFT])
 	GameState.vibrate(60)
 	_add_shake(0.3)
@@ -1204,6 +1282,9 @@ func _eat_hole(a: Hole, b: Hole) -> void:
 	b.set_alive(false)
 	if shifted:
 		_shift_blast(b)
+		if a == player and b == _tut_target and _tut == 3:
+			_tut = 4
+			hud.notice(tr("TUT_DONE"), 3.0)
 	hud.feed(tr("FEED_SHIFT" if shifted else "FEED_EAT") % [a.hole_name, b.hole_name], a.color)
 	if shifted and a == player and mode == GameState.Mode.CLASSIC and b.controller is BotAI:
 		# The bot comes back in a few seconds and hunts the player for a while.

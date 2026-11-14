@@ -221,9 +221,9 @@ func _build_shift_button() -> void:
 
 
 ## Pulsing "press SHIFT" pointer for players who have never used the button.
-func show_shift_hint() -> void:
+func show_shift_hint(text := "") -> void:
 	_hint.visible = true
-	(_hint.get_child(0) as Label).text = tr("SHIFT_HINT")
+	(_hint.get_child(0) as Label).text = text if text != "" else tr("SHIFT_HINT")
 
 
 func hide_shift_hint() -> void:
