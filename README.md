@@ -25,7 +25,7 @@ one button swaps the two. The small one becomes the danger.
 
 Then 8 s of cooldown (ready again right after a respawn). Bots close by freeze for
 a moment in surprise and then run. Shift works in every mode; there is no separate
-mode for it.
+mode for it. The very first match shows a one-time hint pointing at the button.
 
 On Hard difficulty bots have their own Shift: they slip away from a bigger hole or
 dive into one. A Shift kill by the player gets a brief slow-motion close-up, and

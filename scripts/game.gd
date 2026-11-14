@@ -79,6 +79,8 @@ var _debris_gain := 0
 var _debris_gain_timer := 0.0
 var _frame_ms_sum := 0.0
 var _frames := 0
+## The one-time "press SHIFT" hint is up (first ever match).
+var _hint_shown := false
 
 
 func _ready() -> void:
@@ -116,6 +118,9 @@ func _ready() -> void:
 	hud.resume.connect(resume)
 	hud.shift_pressed.connect(_player_shift)
 	_update_hud()
+	if not GameState.autoplay and not Save.get_setting("shift_hint_done", false):
+		_hint_shown = true
+		hud.show_shift_hint()
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--screenshot="):
 			_take_screenshot(arg.trim_prefix("--screenshot="))
@@ -1057,6 +1062,10 @@ func _player_shift() -> void:
 	_add_shake(0.3)
 	Sfx.play("shift")
 	_shift_fx(player)
+	if _hint_shown:
+		_hint_shown = false
+		hud.hide_shift_hint()
+		Save.set_setting("shift_hint_done", true)
 
 
 ## The world-side Shift effects: the ring wave and nearby bots freezing.

@@ -34,6 +34,7 @@ var shift_button: Button
 var _shift_fill: ShiftFill
 var _shift_label: Label
 var _shift_banner: Label
+var _hint: ShiftHint
 var _flash: ColorRect
 var _fade: ColorRect
 var _shift_was_ready := true
@@ -201,6 +202,32 @@ func _build_shift_button() -> void:
 	_shift_banner.add_theme_color_override("font_color", c.lightened(0.2))
 	_shift_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_shift_banner)
+
+	# One-time hint above the button for the very first match.
+	_hint = ShiftHint.new()
+	_hint.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	_hint.position = Vector2(16, -316)
+	_hint.size = Vector2(280, 110)
+	_hint.visible = false
+	var hl := UiTheme.label("", 24, HORIZONTAL_ALIGNMENT_CENTER, 700)
+	hl.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	hl.custom_minimum_size.y = 76
+	hl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hl.add_theme_constant_override("outline_size", 6)
+	hl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
+	hl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hint.add_child(hl)
+	_root.add_child(_hint)
+
+
+## Pulsing "press SHIFT" pointer for players who have never used the button.
+func show_shift_hint() -> void:
+	_hint.visible = true
+	(_hint.get_child(0) as Label).text = tr("SHIFT_HINT")
+
+
+func hide_shift_hint() -> void:
+	_hint.visible = false
 
 
 ## ready: can press now; cooldown_left: seconds until ready; active: shifted, active_left: seconds left.
@@ -392,6 +419,7 @@ func show_results(title: String, lines: Array) -> void:
 	_shift_banner.text = ""
 	_notice.text = ""
 	_combo_label.text = ""
+	_hint.visible = false
 	for c in _feed_box.get_children():
 		c.queue_free()
 	_pointers.pointers = []
@@ -461,3 +489,21 @@ class PointerLayer extends Control:
 			var r := p + Vector2.from_angle(a - 2.4) * 18.0
 			draw_colored_polygon(PackedVector2Array([tip, l, r]), c)
 			draw_polyline(PackedVector2Array([tip, l, r, tip]), Color(0, 0, 0, 0.6), 3.0, true)
+
+
+## Label plus an arrow pointing down at the SHIFT button; gently pulses.
+class ShiftHint extends Control:
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var tw := create_tween().set_loops()
+		tw.tween_property(self, "modulate:a", 0.55, 0.55).set_trans(Tween.TRANS_SINE)
+		tw.tween_property(self, "modulate:a", 1.0, 0.55).set_trans(Tween.TRANS_SINE)
+
+	func _draw() -> void:
+		# The tip sits over the centre of the shift button (button is 150 px
+		# wide at x=32; the hint starts at x=16).
+		var tip := Vector2(107.0 - 16.0, size.y - 2.0)
+		var c := Powerup.COLORS[Powerup.Kind.SHIFT]
+		draw_colored_polygon(PackedVector2Array([tip + Vector2(-15, -22), tip + Vector2(15, -22), tip]), c)
+		draw_polyline(PackedVector2Array([tip + Vector2(-15, -22), tip, tip + Vector2(15, -22)]),
+			Color(0, 0, 0, 0.5), 3.0, true)
