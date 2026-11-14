@@ -280,6 +280,51 @@ func fracture(e: Edible, h: Hole) -> void:
 	_feedback(origin, big, pts, h, 0.35)
 
 
+## Shift blast: a shockwave at `origin` cracks the buildings around it and
+## throws chunks and small things outwards. Nothing is eaten here, it only
+## makes a mess for the holes that come after.
+func blast(origin: Vector3, reach: float) -> void:
+	var targets: Array[Edible] = []
+	for bucket in game._cells_around(origin, reach):
+		for e: Edible in bucket:
+			if is_instance_valid(e) and e.falling_into == null:
+				targets.append(e)
+	var woken := 0
+	for e in targets:
+		if woken >= HoleRules.BLAST_MAX_WOKEN or not is_instance_valid(e) or e.falling_into != null:
+			continue
+		var dist := Vector2(e.position.x - origin.x, e.position.z - origin.z).length()
+		var power := HoleRules.blast_power(dist - e.extent * 0.4, reach)
+		if power <= 0.0:
+			continue
+		if e.kind != "debris" and e.breakable and e.freeze and not e.moving:
+			var pieces := _spawn(e, true)
+			if pieces.is_empty():
+				continue
+			DebrisRules.link_supports(pieces)
+			_puff(e.position - Vector3(0, e.size.y * 0.5, 0), e.extent * 0.6, 14)
+			for d in pieces:
+				if woken < HoleRules.BLAST_MAX_WOKEN and d.position.y < 4.0 + power * 6.0:
+					_throw(d, origin, power)
+					woken += 1
+		elif e.kind == "debris" or e.extent < 3.0:
+			_throw(e, origin, power)
+			woken += 1
+	debris_peak = maxi(debris_peak, _live.size())
+
+
+func _throw(e: Edible, origin: Vector3, power: float) -> void:
+	game._wake(e)
+	e.magnetic = true
+	var out := e.position - origin
+	out.y = 0.0
+	out = out.normalized() if out.length() > 0.05 else Vector3.RIGHT.rotated(Vector3.UP, randf() * TAU)
+	e.linear_velocity = out * (3.0 + power * 9.0) + Vector3.UP * (2.0 + power * 5.0)
+	e.angular_velocity = Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * (1.0 + power * 3.0)
+	if e.kind == "debris":
+		_live[e] = true
+
+
 ## Should `e` (which does not fit `h`) be broken up so `h` can eat part of it?
 func can_fracture(e: Edible, h: Hole, dist: float) -> bool:
 	if not e.breakable or not e.freeze or e.moving:

@@ -109,6 +109,10 @@ func _init() -> void:
 	_check(HoleRules.chain_bonus(9, 3) == 9, "the third shift kill pays +100 %")
 	_check(HoleRules.SHIFT_CHAIN_WINDOW > HoleRules.SHIFT_COOLDOWN + Powerup.DURATIONS[Powerup.Kind.SHIFT],
 		"the chain window allows back-to-back shifts")
+	_check(HoleRules.blast_reach(top) > HoleRules.blast_reach(base), "a bigger victim makes a bigger blast")
+	_check(HoleRules.blast_power(0.0, 10.0) == 1.0 and HoleRules.blast_power(10.0, 10.0) == 0.0, "blast power fades from 1 to 0")
+	_check(HoleRules.blast_power(3.0, 10.0) > HoleRules.blast_power(7.0, 10.0), "blast is weaker farther out")
+	_check(HoleRules.blast_power(50.0, 10.0) == 0.0, "no blast beyond the reach")
 	var k := Powerup.Kind.SHIFT
 	_check(Powerup.DURATIONS.has(k) and Powerup.COLORS.has(k) and Powerup.NAMES.has(k), "SHIFT has duration, colour and name")
 	_check(Powerup.WEIGHTS.get(k, 0) == 0, "SHIFT has no spawn weight")

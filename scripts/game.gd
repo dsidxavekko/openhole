@@ -1123,8 +1123,25 @@ func _shift_kill_slowmo() -> void:
 		func(): Engine.time_scale = 1.0)
 
 
+## The swallowed hole implodes: a bigger ring, a boom and a shockwave that
+## cracks buildings and throws things around the spot.
+func _shift_blast(victim: Hole) -> void:
+	if attract:
+		return
+	var reach := HoleRules.blast_reach(victim.radius)
+	_ring(victim.position, victim.radius + 0.5, reach, Powerup.COLORS[Powerup.Kind.SHIFT])
+	demolition.blast(victim.position, reach)
+	if victim.position.distance_to(player.position) < 45.0 + player.radius * 4.0:
+		Sfx.play("boom", randf_range(0.85, 1.0), -2.0, 300)
+		_add_shake(0.5)
+
+
 ## A ring that runs out over the ground from the hole.
 func _shift_wave(h: Hole) -> void:
+	_ring(h.position, h.radius + 0.5, h.radius + 0.5 + SHIFT_FREEZE_REACH, Powerup.COLORS[Powerup.Kind.SHIFT])
+
+
+func _ring(at: Vector3, r0: float, r1: float, color: Color) -> void:
 	var torus := TorusMesh.new()
 	torus.inner_radius = 0.9
 	torus.outer_radius = 1.0
@@ -1134,16 +1151,14 @@ func _shift_wave(h: Hole) -> void:
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.no_depth_test = true
-	mat.albedo_color = Color(Powerup.COLORS[Powerup.Kind.SHIFT], 0.9)
+	mat.albedo_color = Color(color, 0.9)
 	var wave := MeshInstance3D.new()
 	wave.mesh = torus
 	wave.material_override = mat
 	wave.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	wave.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	add_child(wave)
-	wave.position = h.position + Vector3(0, 0.2, 0)
-	var r0 := h.radius + 0.5
-	var r1 := r0 + SHIFT_FREEZE_REACH
+	wave.position = at + Vector3(0, 0.2, 0)
 	wave.scale = Vector3(r0, 0.3, r0)
 	var tw := create_tween().set_parallel()
 	tw.tween_property(wave, "scale", Vector3(r1, 0.3, r1), 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
@@ -1187,6 +1202,8 @@ func _eat_hole(a: Hole, b: Hole) -> void:
 			a.add_points(chain_bonus)
 			hud.feed(tr("FEED_CHAIN") % _shift_chain, a.color)
 	b.set_alive(false)
+	if shifted:
+		_shift_blast(b)
 	hud.feed(tr("FEED_SHIFT" if shifted else "FEED_EAT") % [a.hole_name, b.hole_name], a.color)
 	if shifted and a == player and mode == GameState.Mode.CLASSIC and b.controller is BotAI:
 		# The bot comes back in a few seconds and hunts the player for a while.

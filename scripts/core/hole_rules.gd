@@ -107,6 +107,26 @@ static func can_be_shifted(_level: int) -> bool:
 	return true
 
 
+# --- Shift blast -------------------------------------------------------------
+
+## A hole swallowed on Shift implodes: the shockwave cracks buildings around
+## the spot and throws loose things outwards.
+const BLAST_BASE := 6.0
+const BLAST_PER_RADIUS := 1.1
+## Most things one blast may wake up (keeps the physics cheap).
+const BLAST_MAX_WOKEN := 60
+
+
+## How far the shockwave reaches, from the radius of the swallowed hole.
+static func blast_reach(victim_r: float) -> float:
+	return BLAST_BASE + victim_r * BLAST_PER_RADIUS
+
+
+## Strength 0..1 at `dist` from the centre; 1 in the middle, 0 at the reach.
+static func blast_power(dist: float, reach: float) -> float:
+	return clampf(1.0 - dist / maxf(reach, 0.01), 0.0, 1.0)
+
+
 # --- Bot Shift (hard bots only) ----------------------------------------------
 
 ## How close a hole that could eat us must be before a bot shifts to escape.
