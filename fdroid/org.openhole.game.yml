@@ -5,7 +5,7 @@
 # The build is NOT verified on an F-Droid builder yet: run it through `fdroid build` or the
 # fdroiddata GitLab CI on the merge request.
 Categories:
-  - Games
+  - Casual Game
 License: MIT
 AuthorName: dsidxavekko
 WebSite: https://dsidxavekko.itch.io/openhole
