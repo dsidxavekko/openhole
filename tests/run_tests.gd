@@ -86,6 +86,16 @@ func _init() -> void:
 			patterns_ok = false
 	_check(patterns_ok, "skin patterns are known to the shader")
 
+	print("Match highlights")
+	var combo_hole := Hole.new()
+	combo_hole._ready()
+	combo_hole.combo_points(10)
+	combo_hole.combo_points(10)
+	combo_hole.combo_points(10)
+	_check(combo_hole.best_combo == 3, "best combo follows the streak")
+	combo_hole.combo = 0
+	_check(combo_hole.best_combo == 3, "best combo survives a reset")
+
 	print("Powerup")
 	var no_shield := true
 	for i in 300:

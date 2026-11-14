@@ -33,6 +33,7 @@ var _fast_resize := 0.0
 var pattern := 0
 ## Eating streak: things eaten less than COMBO_WINDOW apart.
 var combo := 0
+var best_combo := 0
 var _combo_timer := 0.0
 var controller: RefCounted = null
 
@@ -119,6 +120,7 @@ func add_points(p: int) -> void:
 ## Points for eating something worth `p`, with the streak bonus.
 func combo_points(p: int) -> int:
 	combo = combo + 1 if _combo_timer > 0.0 else 1
+	best_combo = maxi(best_combo, combo)
 	_combo_timer = COMBO_WINDOW
 	return int(round(p * HoleRules.combo_multiplier(combo)))
 

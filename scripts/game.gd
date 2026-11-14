@@ -1435,6 +1435,17 @@ func _percent() -> float:
 	return minf(100.0, 100.0 * eaten_weight / maxf(total_count, 1))
 
 
+## Highlights of the match for the results screen: the biggest single item,
+## the longest combo and swap chain (each only when worth mentioning).
+func _append_highlights(lines: Array) -> void:
+	if _best_item > 0:
+		lines.append(tr("BEST_ITEM") % _best_item)
+	if player.best_combo >= 2:
+		lines.append(tr("BEST_COMBO") % player.best_combo)
+	if _shift_chain_max >= 2:
+		lines.append(tr("BEST_CHAIN") % _shift_chain_max)
+
+
 ## Shift summary for the results screen (holes eaten in Shift needs rivals,
 ## but the used-Shifts line is useful in Solo and the Daily too).
 func _append_shift_stats(lines: Array) -> void:
@@ -1508,6 +1519,7 @@ func _finish() -> void:
 	if record:
 		lines.append(tr("NEW_RECORD"))
 	lines.append(tr("EATEN_COUNT") % eaten_count)
+	_append_highlights(lines)
 	if save:
 		Save.add_counter("total_eaten", eaten_count)
 		if player.holes_eaten_shifted > 0:

@@ -52,6 +52,9 @@ CLOSE,Close,Закрити
 DAILY,Daily challenge,Щоденний виклик
 DESC_DAILY,One city for everyone today,Одне місто для всіх на сьогодні
 DAILY_DONE,Daily challenge done!,Щоденний виклик пройдено!
+BEST_ITEM,Biggest bite: %d points,Найбільший шматок: %d очок
+BEST_COMBO,Best combo: x%d,Найкраще комбо: x%d
+BEST_CHAIN,Best swap chain: x%d,Найкращий ланцюг Зсувів: x%d
 EATEN_COUNT,Things eaten: %d,З'їдено предметів: %d
 NEW_SKIN,New skin: %s!,Новий скін: %s!
 SKINS,Skins,Скіни
