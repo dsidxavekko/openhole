@@ -1,0 +1,30 @@
+# Draft of the fdroiddata recipe (metadata/org.openhole.game.yml). Not submitted yet.
+# The `build` steps are NOT verified: F-Droid builds from source only, so the Godot
+# Android export template has to be built from the Godot sources (or taken from an
+# existing Godot app recipe in fdroiddata) instead of the prebuilt official one.
+Categories:
+  - Games
+License: MIT
+AuthorName: dsidxavekko
+WebSite: https://dsidxavekko.itch.io/openhole
+SourceCode: https://github.com/dsidxavekko/openhole
+IssueTracker: https://github.com/dsidxavekko/openhole/issues
+Changelog: https://github.com/dsidxavekko/openhole/releases
+
+AutoName: OpenHole
+
+RepoType: git
+Repo: https://github.com/dsidxavekko/openhole.git
+
+Builds:
+  - versionName: 0.5.0
+    versionCode: 10
+    commit: v0.5.0
+    output: build/openhole-release.apk
+    # TODO: sudo/prebuild/build: Godot 4.7 editor + export templates built from
+    # source, then `godot --headless --import` and `--export-release "Android"`.
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 0.5.0
+CurrentVersionCode: 10

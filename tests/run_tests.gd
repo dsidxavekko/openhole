@@ -96,6 +96,20 @@ func _init() -> void:
 	combo_hole.combo = 0
 	_check(combo_hole.best_combo == 3, "best combo survives a reset")
 
+	print("F-Droid metadata")
+	var code := 0
+	for line in FileAccess.get_file_as_string("res://export_presets.cfg").split("\n"):
+		if line.begins_with("version/code="):
+			code = int(line.trim_prefix("version/code="))
+	for loc in ["en-US", "uk"]:
+		var base := "res://fastlane/metadata/android/%s/" % loc
+		var short_text := FileAccess.get_file_as_string(base + "short_description.txt").strip_edges()
+		_check(short_text.length() > 0 and short_text.length() <= 80, "%s short description fits 80 characters" % loc)
+		_check(FileAccess.get_file_as_string(base + "title.txt").strip_edges().length() <= 50, "%s title fits 50 characters" % loc)
+		_check(FileAccess.get_file_as_string(base + "full_description.txt").length() <= 4000, "%s full description fits 4000 characters" % loc)
+		var log := FileAccess.get_file_as_string(base + "changelogs/%d.txt" % code)
+		_check(log.length() > 0 and log.to_utf8_buffer().size() <= 500, "%s changelog for versionCode %d exists and fits 500 bytes" % [loc, code])
+
 	print("Gamepad")
 	_check(Gamepad.apply_deadzone(Vector2(0.1, -0.1)) == Vector2.ZERO, "a stick inside the dead zone gives nothing")
 	_check(Gamepad.apply_deadzone(Vector2(1, 0)).is_equal_approx(Vector2(1, 0)), "full tilt reaches 1")
