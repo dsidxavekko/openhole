@@ -344,7 +344,9 @@ func _spawn_holes() -> void:
 				_player_bot = BotAI.new(h, self, 0.8)
 		else:
 			h.controller = BotAI.new(h, self, randf_range(skill.x, skill.y),
-				GameState.bot_chase_start(), GameState.difficulty == GameState.Difficulty.HARD)
+				GameState.bot_chase_start(),
+				GameState.difficulty != GameState.Difficulty.EASY,
+				GameState.bot_shift_gap())
 		holes.append(h)
 
 

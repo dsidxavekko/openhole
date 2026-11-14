@@ -13,6 +13,9 @@ const DIFFICULTY_KEYS := ["DIFF_EASY", "DIFF_NORMAL", "DIFF_HARD"]
 ## Bot skill range and how soon bots start hunting other holes, per difficulty.
 const BOT_SKILL := [Vector2(0.2, 0.45), Vector2(0.3, 0.7), Vector2(0.6, 0.95)]
 const BOT_CHASE_START := [25.0, 15.0, 8.0]
+## Minimum seconds between a bot's Shift uses, per difficulty (0 = whenever).
+## Easy bots never shift; Normal ones shift sparingly; Hard ones freely.
+const BOT_SHIFT_GAP := [9999.0, 30.0, 0.0]
 const MIN_BOTS := 3
 const MAX_BOTS := 11
 
@@ -141,3 +144,7 @@ func bot_skill_range() -> Vector2:
 
 func bot_chase_start() -> float:
 	return BOT_CHASE_START[difficulty]
+
+
+func bot_shift_gap() -> float:
+	return BOT_SHIFT_GAP[difficulty]

@@ -31,15 +31,19 @@ var _avenger: Hole = null
 var _revenge_time := 0.0
 ## Hard bots may spend their Shift.
 var allow_shift := false
+## Minimum seconds between Shift uses (Normal bots shift rarely; 0 = no limit).
+var _shift_gap := 0.0
+var _shift_wait := 0.0
 
 
 func _init(p_hole: Hole, p_game: Node, p_skill: float, p_chase_start := 15.0,
-		p_allow_shift := false) -> void:
+		p_allow_shift := false, p_shift_gap := 0.0) -> void:
 	hole = p_hole
 	game = p_game
 	skill = p_skill
 	_no_chase_start = p_chase_start
 	allow_shift = p_allow_shift
+	_shift_gap = p_shift_gap
 	target = hole.position
 
 
@@ -68,6 +72,8 @@ func update(delta: float) -> void:
 	_chase_cooldown -= delta
 	if _revenge_time > 0.0:
 		_revenge_time -= delta
+	if _shift_wait > 0.0:
+		_shift_wait -= delta
 	if allow_shift:
 		_maybe_shift()
 	if state == State.CHASE:
@@ -155,13 +161,15 @@ func _decide() -> void:
 		target = game.clamp_to_play_area(hole.position + Vector3(cos(a), 0, sin(a)) * 20.0)
 
 
-## Hard bots shift too: slip away from a bigger hole, or dive into one head-first.
+## Normal and hard bots shift too: slip away from a bigger hole, or dive into
+## one head-first. Normal bots do it sparingly (_shift_gap between uses).
 func _maybe_shift() -> void:
-	if not hole.shift_ready():
+	if not hole.shift_ready() or _shift_wait > 0.0:
 		return
 	# Escape: something that could eat us is right here.
 	var threat: Hole = game.find_threat(hole, HoleRules.shift_escape_reach(hole.radius))
 	if threat and randf() < skill:
+		_shift_wait = _shift_gap
 		hole.start_shift()
 		game.bot_shifted(hole)
 		return
@@ -179,5 +187,6 @@ func _maybe_shift() -> void:
 			victim = o
 	if victim and randf() < skill * 0.7:
 		_shift_target = victim
+		_shift_wait = _shift_gap
 		hole.start_shift()
 		game.bot_shifted(hole)
