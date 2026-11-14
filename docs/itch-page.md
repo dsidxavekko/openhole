@@ -46,14 +46,22 @@ Being small becomes the dangerous state, and you pay for it:
 
 It is a button, not a random pick-up. You decide when to swap sides.
 
-And the bots know it too: on **Hard** difficulty they have their own Shift. They
-slip away from a bigger hole at the last moment, or dive into one that got careless.
-Land a Shift kill yourself and the game drops into a short slow-motion close-up;
-every hole-vs-hole kill shows up in a kill feed, the results screen counts your
-Shifts and Shift kills, and three Shift kills unlock the purple **Phase** skin.
+And the bots know it too: on **Normal** difficulty they shift sparingly (about
+once per half a minute), and on **Hard** they use it freely — they slip away from
+a bigger hole at the last moment, or dive into one that got careless. In Classic
+the bot you shift-eat comes back out for revenge and hunts you for a while. Land
+a Shift kill yourself and the game drops into a short slow-motion close-up; every
+hole-vs-hole kill shows up in a kill feed, kills in quick succession build a swap
+chain worth up to +100 % points, the results screen counts your Shifts and Shift
+kills, and three Shift kills unlock the purple **Phase** skin. The very first
+match shows a one-time hint pointing at the button.
 
 ## What's new since launch
 
+- **v0.5.0** — bots on Normal shift too (sparingly); shift-eaten bots in Classic
+  come back out for revenge; quick Shift kills build a swap chain worth up to
+  +100 % points; a one-time SHIFT hint in the first match; the Daily card counts
+  your Shifts; new sounds for combos, collapses and respawns.
 - **v0.4.0** — Mexico City map; buildings pick models that fit their height instead
   of being stretched; map colour palettes for cars, people, props and debris.
 - **v0.3.x** — night map; detailed streets (zebra crossings, tiles, manholes);
