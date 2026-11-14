@@ -1,0 +1,1 @@
+A Shift kill now implodes into a shockwave that cracks buildings and throws chunks around. The first match teaches Shift with a bigger hole and slow motion. Results show your biggest bite, best combo and best swap chain. Gamepad support: stick, X/RB Shift, Start pause, menu focus.

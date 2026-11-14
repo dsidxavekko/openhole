@@ -17,14 +17,14 @@ RepoType: git
 Repo: https://github.com/dsidxavekko/openhole.git
 
 Builds:
-  - versionName: 0.5.0
-    versionCode: 10
-    commit: v0.5.0
+  - versionName: 0.5.5
+    versionCode: 11
+    commit: v0.5.5
     output: build/openhole-release.apk
     # TODO: sudo/prebuild/build: Godot 4.7 editor + export templates built from
     # source, then `godot --headless --import` and `--export-release "Android"`.
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 0.5.0
-CurrentVersionCode: 10
+CurrentVersion: 0.5.5
+CurrentVersionCode: 11
