@@ -1,7 +1,9 @@
 # Draft of the fdroiddata recipe (metadata/org.openhole.game.yml). Not submitted yet.
-# The `build` steps are NOT verified: F-Droid builds from source only, so the Godot
-# Android export template has to be built from the Godot sources (or taken from an
-# existing Godot app recipe in fdroiddata) instead of the prebuilt official one.
+# Modelled on the Godot template in fdroiddata (templates/build-godot.yml) and on existing
+# Godot 4 recipes (e.g. com.game.Cascada). F-Droid builds from source only, so the editor and
+# the Android export template are compiled from the Godot sources (srclib Godot@4.7.2-stable).
+# The build is NOT verified on an F-Droid builder yet: run it through `fdroid build` or the
+# fdroiddata GitLab CI on the merge request.
 Categories:
   - Games
 License: MIT
@@ -20,11 +22,37 @@ Builds:
   - versionName: 0.5.5
     versionCode: 11
     commit: v0.5.5
-    output: build/openhole-release.apk
-    # TODO: sudo/prebuild/build: Godot 4.7 editor + export templates built from
-    # source, then `godot --headless --import` and `--export-release "Android"`.
+    timeout: 14400
+    sudo:
+      - apt-get update
+      - apt-get install -y pkgconf scons g++
+    output: openhole.apk
+    srclibs:
+      - Godot@4.7.2-stable
+    build:
+      - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+      - export ANDROID_NDK_ROOT=$$NDK$$
+      - export ANDROID_HOME=$$SDK$$
+      - export ANDROID_SDK_ROOT=$$SDK$$
+      - export SCONS="scons -j `nproc` verbose=no warnings=no progress=no"
+      - pushd $$Godot$$
+      - $SCONS platform=linuxbsd target=editor
+      - $SCONS platform=android target=template_release arch=arm64 production=yes swappy=no
+        generate_android_binaries=yes generate_apk=yes
+      - popd
+      - sed -i -e 's:\(^.*package/signed\)\s*=.*$:\1 = false:' export_presets.cfg
+      - sed -i -e '/custom_template\/release/s|=.*|="$$Godot$$/bin/android_release.apk"|'
+        export_presets.cfg
+      - $$Godot$$/bin/godot.linuxbsd.editor.x86_64 --headless --import
+      - export GODOT_CFG=$(ls ~/.config/godot/editor_settings-*.tres)
+      - sed -i -e "s:\(^.*java_sdk_path\)\s*=.*$:\1 = \"$JAVA_HOME\":" $GODOT_CFG
+      - sed -i -e 's:\(^.*android_sdk_path\)\s*=.*$:\1 = "$$SDK$$":' $GODOT_CFG
+      - $$Godot$$/bin/godot.linuxbsd.editor.x86_64 --headless --export-release 'Android'
+        openhole.apk
+    ndk: r29b
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
+UpdateCheckData: export_presets.cfg|version/code=(\d+)|.|version/name="([\d.]+)"
 CurrentVersion: 0.5.5
 CurrentVersionCode: 11
