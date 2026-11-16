@@ -100,6 +100,12 @@ func _init() -> void:
 	_check(Achievements.new_set({"total_eaten": 1}, {"total_eaten": 1}).is_empty(), "nothing new without progress")
 	_check(Achievements.progress_text(8, {"solo": 12.5}) == "12/40%", "solo progress uses percent")
 
+	print("Graphics quality")
+	_check(GraphicsQuality.KEYS.size() == 3, "three quality presets")
+	_check(GraphicsQuality.preset(0)["shadow"] < GraphicsQuality.preset(2)["shadow"], "low uses a smaller shadow atlas")
+	_check(GraphicsQuality.preset(0)["scale"] < GraphicsQuality.preset(2)["scale"], "low renders fewer pixels")
+	_check(GraphicsQuality.name_key(9) == "QUALITY_HIGH", "an out-of-range level clamps")
+
 	print("Skins")
 	_check(Skins.unlocked_with({}, 0) and Skins.unlocked_with({}, 1), "first skins are free")
 	_check(not Skins.unlocked_with({}, Skins.count() - 1), "last skin starts locked")

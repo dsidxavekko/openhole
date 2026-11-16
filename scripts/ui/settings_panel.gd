@@ -7,6 +7,7 @@ signal changed
 signal language_changed
 
 var in_menu := true
+var _body: VBoxContainer
 
 
 func _init(p_in_menu := true) -> void:
@@ -22,6 +23,25 @@ func _build() -> void:
 	for c in get_children():
 		c.queue_free()
 	add_child(UiTheme.label(tr("SETTINGS"), 44, HORIZONTAL_ALIGNMENT_CENTER, 800))
+	if in_menu:
+		var scroll := ScrollContainer.new()
+		scroll.custom_minimum_size = Vector2(0, 840)
+		scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		add_child(scroll)
+		_body = VBoxContainer.new()
+		_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_body.add_theme_constant_override("separation", 18)
+		scroll.add_child(_body)
+	else:
+		_body = self
+
+	if in_menu:
+		_row(tr("LANGUAGE"), _cycler(
+			func(): return "English" if TranslationServer.get_locale().begins_with("en") else "Українська",
+			func(_dir: int):
+				GameState.set_language("uk" if TranslationServer.get_locale().begins_with("en") else "en")
+				language_changed.emit()))
 
 	var vol := HSlider.new()
 	vol.min_value = 0.0
@@ -38,9 +58,16 @@ func _build() -> void:
 	_toggle(tr("CAMERA_SHAKE"), "shake", "shake")
 	_toggle(tr("SHOW_FPS"), "show_fps", "fps")
 
+	_row(tr("QUALITY"), _cycler(
+		func(): return tr(GraphicsQuality.name_key(GameState.graphics)),
+		func(dir: int): GameState.set_option("graphics", "graphics",
+			posmod(GameState.graphics + dir, GraphicsQuality.KEYS.size()))))
+	_toggle(tr("LEFT_HANDED"), "left_handed", "left_handed")
+	_toggle(tr("FLASHES"), "flashes", "flashes")
+
 	if not in_menu:
 		return
-	add_child(_separator())
+	_body.add_child(_separator())
 	_row(tr("DIFFICULTY"), _cycler(func(): return tr(GameState.DIFFICULTY_KEYS[GameState.difficulty]),
 		func(dir: int): GameState.set_option("difficulty", "difficulty", posmod(GameState.difficulty + dir, 3))))
 	_row(tr("BOTS"), _cycler(func(): return str(GameState.bot_count),
@@ -80,7 +107,7 @@ func _row(text: String, control: Control) -> void:
 		control.custom_minimum_size.x = 260
 		control.size_flags_horizontal = Control.SIZE_FILL
 	row.add_child(control)
-	add_child(row)
+	_body.add_child(row)
 
 
 func _toggle(text: String, var_name: String, save_key: String) -> void:

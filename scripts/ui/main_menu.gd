@@ -209,7 +209,7 @@ func _fill_cards() -> void:
 	var daily_right := tr("BEST_TODAY") % ("%.1f%%" % daily_best) if daily_best > 0 else _today()
 	if daily_shifts > 0:
 		daily_right += "  ·  " + tr("SHIFTS_TODAY") % daily_shifts
-	var streak := GameState.daily_streak()
+	var streak: int = GameState.daily_streak()
 	if streak > 1:
 		daily_right += "  ·  " + tr("STREAK") % streak
 	var specs := [
@@ -389,7 +389,7 @@ func _open_stats() -> void:
 func _show_achievement_toast() -> void:
 	if GameState.pending_achievements.is_empty():
 		return
-	var names := GameState.pending_achievements.duplicate()
+	var names := PackedStringArray(GameState.pending_achievements)
 	GameState.pending_achievements.clear()
 	var style := UiTheme.rounded(Color(0.17, 0.11, 0.42, 0.98), 22)
 	style.content_margin_left = 24
@@ -415,7 +415,7 @@ func _show_achievement_toast() -> void:
 
 ## The settings sheet changed the locale: rebuild the whole menu in the new one.
 func _on_language_changed() -> void:
-	_build()
+	_build.call_deferred()
 
 
 func _open_sheet(content: Control) -> void:

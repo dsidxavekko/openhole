@@ -140,3 +140,10 @@ ACH_BATTLE_FIVE,Five battle wins,П'ять перемог у Битві
 ACH_MATCHES_10,Ten matches,Десять матчів
 ACH_STREAK_3,Three-day streak,Серія три дні
 ACH_STREAK_7,Seven-day streak,Серія сім днів
+LANGUAGE,Language,Мова
+QUALITY,Graphics,Графіка
+QUALITY_LOW,Low,Низька
+QUALITY_MEDIUM,Medium,Середня
+QUALITY_HIGH,High,Висока
+LEFT_HANDED,Left-handed layout,Під ліву руку
+FLASHES,Screen flashes,Спалахи екрана

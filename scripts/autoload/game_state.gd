@@ -36,6 +36,7 @@ var volume := 0.8
 var shake := true
 var show_fps := false
 var skin := 0
+var graphics := 2
 var left_handed := false
 var flashes := true
 ## Achievements unlocked in the last match, shown as a toast in the menu.
@@ -65,9 +66,20 @@ func _ready() -> void:
 	shake = Save.get_setting("shake", true)
 	show_fps = Save.get_setting("fps", false)
 	skin = Save.get_setting("skin", 0)
+	graphics = clampi(Save.get_setting("graphics", GraphicsQuality.Level.HIGH), 0, GraphicsQuality.KEYS.size() - 1)
+	left_handed = Save.get_setting("left_handed", false)
+	flashes = Save.get_setting("flashes", true)
+	# Dev helper for screenshots: "-- --quality=low|medium|high".
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--quality="):
+			graphics = clampi(["low", "medium", "high"].find(arg.trim_prefix("--quality=").to_lower()), 0, 2)
+	# Dev helper for screenshots: "-- --left-handed" previews the mirrored HUD.
+	if "--left-handed" in OS.get_cmdline_user_args():
+		left_handed = true
 	if not Skins.is_unlocked(skin):
 		skin = 0
 	apply_volume()
+	apply_graphics()
 
 
 func _exit_tree() -> void:
@@ -85,6 +97,21 @@ func set_option(key: String, save_key: String, value: Variant) -> void:
 	Save.set_setting(save_key, value)
 	if key == "volume":
 		apply_volume()
+	elif key == "graphics":
+		apply_graphics()
+
+
+## Applies the chosen quality preset to the live viewport and shadows.
+func apply_graphics() -> void:
+	var p := GraphicsQuality.preset(graphics)
+	RenderingServer.directional_shadow_atlas_set_size(int(p["shadow"]), true)
+	RenderingServer.directional_soft_shadow_filter_set_quality(int(p["soft"]))
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return
+	tree.root.msaa_3d = int(p["msaa"])
+	tree.root.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+	tree.root.scaling_3d_scale = float(p["scale"])
 
 
 func apply_volume() -> void:

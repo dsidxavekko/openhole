@@ -110,7 +110,6 @@ func _ready() -> void:
 	joystick.blockers.append(_pause_button)
 
 	_build_shift_button()
-
 	_info_label = UiTheme.label("", 28, HORIZONTAL_ALIGNMENT_RIGHT, 600)
 	_info_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	_info_label.position = Vector2(-280, 120)
@@ -139,6 +138,7 @@ func _ready() -> void:
 	_fps.position = Vector2(-110, -36)
 	_fps.modulate = Color(1, 1, 1, 0.6)
 	_root.add_child(_fps)
+	_apply_handedness()
 
 	_flash = ColorRect.new()
 	_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -232,6 +232,40 @@ func _build_shift_button() -> void:
 	_root.add_child(_hint)
 
 
+## Moves the SHIFT button and the FPS counter for left-handed players.
+func _apply_handedness() -> void:
+	var w := shift_button.custom_minimum_size.x
+	var right := GameState.left_handed
+	var ax := 1.0 if right else 0.0
+	shift_button.anchor_left = ax
+	shift_button.anchor_right = ax
+	shift_button.anchor_top = 1.0
+	shift_button.anchor_bottom = 1.0
+	shift_button.offset_left = -w - 32 if right else 32
+	shift_button.offset_right = -32 if right else 32 + w
+	shift_button.offset_top = -w - 48
+	shift_button.offset_bottom = -48
+
+	_fps.anchor_left = 0.0 if right else 1.0
+	_fps.anchor_right = 0.0 if right else 1.0
+	_fps.anchor_top = 1.0
+	_fps.anchor_bottom = 1.0
+	_fps.offset_left = 16 if right else -110
+	_fps.offset_right = 116 if right else -10
+	_fps.offset_top = -36
+	_fps.offset_bottom = -12
+
+	_hint.anchor_left = ax
+	_hint.anchor_right = ax
+	_hint.anchor_top = 1.0
+	_hint.anchor_bottom = 1.0
+	_hint.offset_left = -296 if right else 16
+	_hint.offset_right = -16 if right else 296
+	_hint.offset_top = -316
+	_hint.offset_bottom = -206
+	_hint.mirrored = right
+
+
 ## Pulsing "press SHIFT" pointer for players who have never used the button.
 func show_shift_hint(text := "") -> void:
 	_hint.visible = true
@@ -273,6 +307,8 @@ func set_shift(ready: bool, cooldown_left: float, active: bool, active_left: flo
 
 ## Short full-screen colour flash.
 func flash(color: Color) -> void:
+	if not GameState.flashes:
+		return
 	_flash.color = Color(color, 0.35)
 	create_tween().tween_property(_flash, "color:a", 0.0, 0.35)
 
@@ -433,7 +469,9 @@ func _fill_pause(with_settings: bool) -> void:
 	for c in _pause_box.get_children():
 		c.queue_free()
 	if with_settings:
-		_pause_box.add_child(SettingsPanel.new(false))
+		var settings := SettingsPanel.new(false)
+		settings.changed.connect(_apply_handedness)
+		_pause_box.add_child(settings)
 		_pause_box.add_child(_button(tr("BACK"), func(): _fill_pause(false)))
 		_focus_first.call_deferred(_pause_box)
 		return
@@ -539,6 +577,7 @@ class PointerLayer extends Control:
 
 ## Label plus an arrow pointing down at the SHIFT button; gently pulses.
 class ShiftHint extends Control:
+	var mirrored := false
 	func _ready() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var tw := create_tween().set_loops()
@@ -548,7 +587,7 @@ class ShiftHint extends Control:
 	func _draw() -> void:
 		# The tip sits over the centre of the shift button (button is 150 px
 		# wide at x=32; the hint starts at x=16).
-		var tip := Vector2(107.0 - 16.0, size.y - 2.0)
+		var tip := Vector2(size.x - 91.0 if mirrored else 91.0, size.y - 2.0)
 		var c := Powerup.COLORS[Powerup.Kind.SHIFT]
 		draw_colored_polygon(PackedVector2Array([tip + Vector2(-15, -22), tip + Vector2(15, -22), tip]), c)
 		draw_polyline(PackedVector2Array([tip + Vector2(-15, -22), tip, tip + Vector2(15, -22)]),
