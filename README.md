@@ -1,5 +1,7 @@
 # OpenHole
 
+![Tests](https://github.com/dsidxavekko/openhole/actions/workflows/test.yml/badge.svg)
+
 Open source (MIT) game in the spirit of hole.io: you are a hole in the ground
 that swallows a procedurally generated city. Built with Godot 4.7 for Android
 (also runs on PC and in the browser).
@@ -49,10 +51,23 @@ Power-ups: magnet, speed, giant (+2 levels for a while), shield (cannot be eaten
 They pause while you are shifted.
 Eating things quickly in a row builds a combo (up to +50 % points).
 Skins for your hole unlock with records. Settings: sound, vibration, camera shake,
-FPS counter, bot skill and count, map theme (day city, warm suburb, night or sandy Mexico City) and seed.
+FPS counter, graphics quality, left-handed layout, screen flashes, bot skill and
+count, map theme (day city, warm suburb, night or sandy Mexico City) and seed.
+
+A how-to-play sheet opens on the first launch and from the `?` button. The stats
+screen keeps lifetime counters, per-mode records, a daily streak and 15 achievements.
+Solo counts the city by value (a skyscraper is worth more than a pedestrian) and
+awards bronze, silver and gold.
 
 Buildings, buses, rocks and big trees break into chunks and collapse into the hole.
 A hole too small for a skyscraper can still bite chunks off it.
+
+## What's new in 0.6
+- A how-to-play sheet on the first launch and a `?` button in the menu.
+- A stats screen: matches, things eaten, Shift kills, records, a daily streak and 15 achievements.
+- Graphics quality presets for phones, a left-handed layout and a screen-flash toggle.
+- Solo counts the city by value and awards bronze, silver and gold medals.
+- Three rival bot personalities; the speed curve is flat at the top, so the biggest hole is no longer the fastest.
 
 ## Download
 Get the APK from [GitHub Releases](https://github.com/dsidxavekko/openhole/releases).

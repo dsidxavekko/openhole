@@ -17,6 +17,8 @@ Press SHIFT and for 3.5 seconds your hole turns small and fast. Nobody can eat y
 <li>Power-ups: magnet, speed, giant and shield. They pause while you are shifted.</li>
 <li>Eating quickly in a row builds a combo for bonus points.</li>
 <li>Skins for your hole unlock with your records.</li>
+<li>A how-to-play sheet on first launch, a stats screen with 15 achievements and a daily streak.</li>
+<li>Graphics quality presets for phones, a left-handed layout and a screen-flash toggle.</li>
 <li>Settings for sound, vibration, camera shake, bot skill and count, map theme and seed.</li>
 <li>Ukrainian and English.</li>
 </ul>

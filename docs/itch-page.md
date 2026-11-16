@@ -60,6 +60,11 @@ bigger hole appears close by and time slows down until you press the button.
 
 ## What's new since launch
 
+- **v0.6.0** — a how-to-play sheet on first launch, a stats screen with 15
+  achievements and a daily streak, graphics quality presets for phones, a
+  left-handed layout and a screen-flash toggle; Solo counts the city by value
+  and awards medals; bots have three rival personalities and big holes no
+  longer move faster than everyone else.
 - **v0.5.5** — a Shift kill implodes into a shockwave that cracks buildings and
   throws chunks; the first match teaches Shift with a bigger hole and slow motion;
   the results screen shows your biggest bite, best combo and best swap chain;
