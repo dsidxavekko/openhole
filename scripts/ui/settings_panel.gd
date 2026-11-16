@@ -39,8 +39,8 @@ func _build() -> void:
 	if in_menu:
 		_row(tr("LANGUAGE"), _cycler(
 			func(): return "English" if TranslationServer.get_locale().begins_with("en") else "Українська",
-			func(_dir: int):
-				GameState.set_language("uk" if TranslationServer.get_locale().begins_with("en") else "en")
+			func(dir: int):
+				GameState.set_language("uk" if dir > 0 else "en")
 				language_changed.emit()))
 
 	var vol := HSlider.new()
