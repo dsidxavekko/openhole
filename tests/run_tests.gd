@@ -68,6 +68,11 @@ func _init() -> void:
 	_check(HoleRules.combo_multiplier(5) > 1.0, "combo grows")
 	_check(is_equal_approx(HoleRules.combo_multiplier(1000), 1.5), "combo bonus is capped at +50 %")
 
+	_check(is_equal_approx(HoleRules.speed_for_radius(0.0), HoleRules.SPEED_BASE), "speed starts at the base")
+	_check(HoleRules.speed_for_radius(HoleRules.SPEED_CAP_RADIUS) > HoleRules.speed_for_radius(0.0), "speed grows with the rim")
+	_check(is_equal_approx(HoleRules.speed_for_radius(30.0), HoleRules.speed_for_radius(HoleRules.SPEED_CAP_RADIUS)), "speed plateaus for big holes")
+	_check(HoleRules.speed_for_radius(30.0) < 7.0 + 30.0 * 0.45, "a max hole is slower than on the old linear curve")
+
 	print("Skins")
 	_check(Skins.unlocked_with({}, 0) and Skins.unlocked_with({}, 1), "first skins are free")
 	_check(not Skins.unlocked_with({}, Skins.count() - 1), "last skin starts locked")

@@ -9,6 +9,11 @@ const FIT_FACTOR := 0.92
 const EAT_HOLE_RATIO := 1.2
 ## Tall things count as wider: a skyscraper needs a big hole, not just its base.
 const HEIGHT_WEIGHT := 0.3
+## Movement speed: grows with the rim, but only up to a point. Without the cap
+## the biggest hole is also the fastest one and nobody can catch it.
+const SPEED_BASE := 7.0
+const SPEED_PER_RADIUS := 0.45
+const SPEED_CAP_RADIUS := 8.0
 
 
 static func radius_for_level(level: int) -> float:
@@ -38,6 +43,12 @@ static func level_progress(points: int) -> float:
 	var a := points_for_level(lvl)
 	var b := points_for_level(lvl + 1)
 	return clampf(float(points - a) / float(b - a), 0.0, 1.0)
+
+
+## Ground speed for a hole of `radius`. Flat after SPEED_CAP_RADIUS so growth
+## does not turn into a runaway speed advantage.
+static func speed_for_radius(radius: float) -> float:
+	return SPEED_BASE + minf(maxf(radius, 0.0), SPEED_CAP_RADIUS) * SPEED_PER_RADIUS
 
 
 ## Effective size used for "does it fit": base width or a share of the height.

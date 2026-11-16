@@ -145,8 +145,8 @@ func _wanted_radius() -> float:
 func speed() -> float:
 	if is_shifted():
 		# Based on the normal size, so shrinking does not slow the hole down.
-		return HoleRules.shifted_speed(7.0 + _base_radius() * 0.45)
-	var s := 7.0 + radius * 0.45
+		return HoleRules.shifted_speed(HoleRules.speed_for_radius(_base_radius()))
+	var s := HoleRules.speed_for_radius(radius)
 	return s * Powerup.SPEED_FACTOR if has_effect(Powerup.Kind.SPEED) else s
 
 
