@@ -1565,8 +1565,8 @@ func _finish() -> void:
 	for h in holes:
 		h.move_dir = Vector2.ZERO
 	_update_hud()
-	# Smoke runs must not touch the player's records.
-	var save := not GameState.autoplay
+	# Smoke runs must not touch the player's records; --save-run is for testing them.
+	var save := not GameState.autoplay or "--save-run" in OS.get_cmdline_user_args()
 	var stats_before := Skins.current_stats()
 	var ach_before := Achievements.current_stats()
 	var key := GameState.record_key()
