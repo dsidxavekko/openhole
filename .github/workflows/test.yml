@@ -1,0 +1,26 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Godot
+        run: |
+          curl -fsSL -o godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          chmod +x Godot_v4.7.2-stable_linux.x86_64
+
+      - name: Import resources
+        run: ./Godot_v4.7.2-stable_linux.x86_64 --headless --import --path .
+
+      - name: Run headless tests
+        run: ./Godot_v4.7.2-stable_linux.x86_64 --headless --path . -s tests/run_tests.gd
