@@ -4,6 +4,7 @@ extends VBoxContainer
 ## in the pause screen only things that can change mid-match.
 
 signal changed
+signal language_changed
 
 var in_menu := true
 

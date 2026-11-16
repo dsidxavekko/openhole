@@ -39,9 +39,21 @@ func _ready() -> void:
 		return
 	_start_background()
 	_build()
+	# First launch: explain the game once. Screenshots and smoke runs skip it.
+	if not GameState.autoplay and not _wants_screenshot() and not Save.get_setting("seen_help", false):
+		Save.set_setting("seen_help", true)
+		_open_help.call_deferred()
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--screenshot="):
 			_take_screenshot(arg.trim_prefix("--screenshot="))
+
+
+## True when this run is a dev screenshot: it must not open sheets on its own.
+func _wants_screenshot() -> bool:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--screenshot=") or arg.begins_with("--shot-sheet="):
+			return true
+	return false
 
 
 ## Dev helper: "-- --screenshot=/path/menu.png [--shot-delay=5] [--shot-sheet=skins]".
@@ -54,6 +66,8 @@ func _take_screenshot(path: String) -> void:
 			_open_skins()
 		if arg == "--shot-sheet=settings":
 			_open_settings()
+		if arg == "--shot-sheet=help":
+			_open_help()
 	await get_tree().create_timer(delay).timeout
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
@@ -298,10 +312,13 @@ func _make_bottom_bar() -> Control:
 	var bar := HBoxContainer.new()
 	bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	bar.alignment = BoxContainer.ALIGNMENT_CENTER
-	bar.add_theme_constant_override("separation", 40)
+	bar.add_theme_constant_override("separation", 22)
 	bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	bar.offset_bottom = -40
+	var help := _round_button("", _open_help)
+	help.text = "?"
+	bar.add_child(help)
 	bar.add_child(_round_button("skins", _open_skins))
 	bar.add_child(_round_button("settings", _open_settings))
 	_lang_button = _round_button("", _toggle_language)
@@ -312,7 +329,7 @@ func _make_bottom_bar() -> Control:
 
 func _round_button(icon_kind: String, action: Callable) -> Button:
 	var b := Button.new()
-	b.custom_minimum_size = Vector2(112, 112)
+	b.custom_minimum_size = Vector2(100, 100)
 	b.add_theme_font_size_override("font_size", 36)
 	UiTheme.style_button(b, UiTheme.round_button(UiTheme.BUTTON), UiTheme.round_button(UiTheme.BUTTON_PRESSED))
 	if icon_kind != "":
@@ -348,7 +365,17 @@ func _open_skins() -> void:
 func _open_settings() -> void:
 	var p := SettingsPanel.new(true)
 	p.changed.connect(_fill_cards)
+	p.language_changed.connect(_on_language_changed)
 	_open_sheet(p)
+
+
+func _open_help() -> void:
+	_open_sheet(HelpPanel.new())
+
+
+## The settings sheet changed the locale: rebuild the whole menu in the new one.
+func _on_language_changed() -> void:
+	_build()
 
 
 func _open_sheet(content: Control) -> void:

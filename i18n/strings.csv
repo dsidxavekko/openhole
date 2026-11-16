@@ -101,3 +101,14 @@ SOLO_GOAL,Medal: %s · next: %s %d%%,Медаль: %s · далі: %s %d%%
 SOLO_NEXT,Next medal: %s %d%%,Наступна медаль: %s %d%%
 SOLO_GOAL_DONE,%s — the whole city is yours!,%s — усе місто твоє!
 ZONE_LEAVING,Out of zone: %ds,Поза зоною: %ds
+HELP,How to play,Як грати
+HELP_GOAL_T,Goal,Мета
+HELP_GOAL,"Swallow everything smaller than your hole. Each bite makes you bigger; after 2 minutes the biggest hole wins.","Ковтай усе, що менше за твою діру. Кожен шматок робить тебе більшим; за 2 хвилини перемагає найбільша діра."
+HELP_CONTROLS_T,Controls,Керування
+HELP_CONTROLS,"Drag anywhere on the screen, or use WASD / the left stick. SHIFT on the button or X / RB swaps roles. Esc / Start pauses.","Тягни пальцем будь-де на екрані або WASD / лівий стік. SHIFT на кнопці чи X / RB змінює роль. Esc / Start — пауза."
+HELP_POWERUPS_T,Power-ups,Бонуси
+HELP_POWERUPS,"Magnet pulls loose things in. Speed makes you faster. Giant adds two levels for a while. Shield keeps other holes from eating you.","Магніт притягує речі. Швидкість робить тебе швидшим. Велетень додає два рівні. Щит не дає іншим дірам тебе з'їсти."
+HELP_SHIFT_T,Shift,Зсув
+HELP_SHIFT,"For 3.5 s you are small, fast and cannot be eaten. Dive into any hole to swallow it, but you earn nothing from the city. Then 8 s of cooldown.","3,5 с ти малий, швидкий і невразливий. Пірни в будь-яку діру, щоб її проковтнути, але з міста очок не отримуєш. Далі 8 с перезарядки."
+HELP_ZONE_T,Battle zone,Зона Битви
+HELP_ZONE,"In Battle the safe zone shrinks. Outside it you fade away in 4 seconds.","У Битві безпечна зона звужується. Поза нею ти розчиняєшся за 4 секунди."
