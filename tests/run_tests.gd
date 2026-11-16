@@ -82,6 +82,13 @@ func _init() -> void:
 	_check(SoloGoals.tier_for(100.0) == 2, "a full city stays gold")
 	_check(SoloGoals.progress_line(10.0) != "" and SoloGoals.progress_line(70.0) != "", "goal lines are built")
 
+	print("Bot styles")
+	_check(BotAI.profile(BotAI.Style.HUNTER)["chase"] > BotAI.profile(BotAI.Style.BALANCED)["chase"], "hunters chase more eagerly")
+	_check(BotAI.profile(BotAI.Style.COLLECTOR)["food"] > BotAI.profile(BotAI.Style.BALANCED)["food"], "collectors look further for food")
+	_check(BotAI.profile(BotAI.Style.CAUTIOUS)["flee"] > BotAI.profile(BotAI.Style.BALANCED)["flee"], "cautious bots flee earlier")
+	_check(BotAI.profile(99)["chase"] == 1.0, "an unknown style falls back to balanced")
+	_check(BotAI.PROFILES.size() == 4, "every style has a profile")
+
 	print("Skins")
 	_check(Skins.unlocked_with({}, 0) and Skins.unlocked_with({}, 1), "first skins are free")
 	_check(not Skins.unlocked_with({}, Skins.count() - 1), "last skin starts locked")

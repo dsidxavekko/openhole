@@ -4,6 +4,15 @@ extends RefCounted
 ## otherwise go for the most valuable food (or a magnet) nearby, otherwise wander.
 
 enum State { WANDER, FOOD, CHASE, FLEE }
+## Rival personality: how eagerly a bot chases, how far it flees, how much it
+## values food and how often it spends Shift.
+enum Style { BALANCED, HUNTER, COLLECTOR, CAUTIOUS }
+const PROFILES := {
+	Style.BALANCED: {"chase": 1.0, "flee": 1.0, "food": 1.0, "shift": 1.0},
+	Style.HUNTER: {"chase": 1.35, "flee": 0.85, "food": 0.85, "shift": 1.0},
+	Style.COLLECTOR: {"chase": 0.55, "flee": 1.0, "food": 1.35, "shift": 0.8},
+	Style.CAUTIOUS: {"chase": 0.8, "flee": 1.4, "food": 1.0, "shift": 1.3},
+}
 
 const CHASE_LIMIT := 3.0
 const CHASE_COOLDOWN := 5.0
@@ -34,16 +43,24 @@ var allow_shift := false
 ## Minimum seconds between Shift uses (Normal bots shift rarely; 0 = no limit).
 var _shift_gap := 0.0
 var _shift_wait := 0.0
+var style := Style.BALANCED
+var _profile := PROFILES[Style.BALANCED]
+
+
+static func profile(p_style: int) -> Dictionary:
+	return PROFILES.get(p_style, PROFILES[Style.BALANCED])
 
 
 func _init(p_hole: Hole, p_game: Node, p_skill: float, p_chase_start := 15.0,
-		p_allow_shift := false, p_shift_gap := 0.0) -> void:
+		p_allow_shift := false, p_shift_gap := 0.0, p_style := Style.BALANCED) -> void:
 	hole = p_hole
 	game = p_game
 	skill = p_skill
 	_no_chase_start = p_chase_start
 	allow_shift = p_allow_shift
 	_shift_gap = p_shift_gap
+	style = p_style
+	_profile = profile(p_style)
 	target = hole.position
 
 
@@ -107,7 +124,7 @@ func _decide() -> void:
 		target = _shift_target.position
 		return
 	_shift_target = null
-	var threat: Hole = game.find_threat(hole, 5.0 + r * 3.0 * skill)
+	var threat: Hole = game.find_threat(hole, (5.0 + r * 3.0 * skill) * float(_profile["flee"]))
 	if threat:
 		state = State.FLEE
 		var away := hole.position - threat.position
@@ -144,13 +161,13 @@ func _decide() -> void:
 		state = State.CHASE
 		target = _avenger.position
 		return
-	if _age > _no_chase_start and _chase_cooldown <= 0.0 and randf() < skill:
+	if _age > _no_chase_start and _chase_cooldown <= 0.0 and randf() < skill * float(_profile["chase"]):
 		var prey: Hole = game.find_prey(hole, 4.0 + r * 2.0)
 		if prey:
 			state = State.CHASE
 			target = prey.position
 			return
-	var food: Variant = game.find_food(hole, 10.0 + r * 2.5, _age > 20.0 and randf() < skill)
+	var food: Variant = game.find_food(hole, (10.0 + r * 2.5) * float(_profile["food"]), _age > 20.0 and randf() < skill)
 	if food != null:
 		state = State.FOOD
 		target = food
@@ -168,7 +185,7 @@ func _maybe_shift() -> void:
 		return
 	# Escape: something that could eat us is right here.
 	var threat: Hole = game.find_threat(hole, HoleRules.shift_escape_reach(hole.radius))
-	if threat and randf() < skill:
+	if threat and randf() < skill * float(_profile["shift"]):
 		_shift_wait = _shift_gap
 		hole.start_shift()
 		game.bot_shifted(hole)
@@ -185,7 +202,7 @@ func _maybe_shift() -> void:
 		if o.can_be_eaten() and HoleRules.can_shift_dive(hole.radius, o.radius, d) and d < best_d:
 			best_d = d
 			victim = o
-	if victim and randf() < skill * 0.7:
+	if victim and randf() < skill * 0.7 * float(_profile["shift"]):
 		_shift_target = victim
 		_shift_wait = _shift_gap
 		hole.start_shift()

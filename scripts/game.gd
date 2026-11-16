@@ -338,6 +338,7 @@ func _spawn_holes() -> void:
 		if _color_distance(c, skin.color) > 0.25:
 			colors.append(c)
 	var skill := GameState.bot_skill_range()
+	var styles := [BotAI.Style.HUNTER, BotAI.Style.COLLECTOR, BotAI.Style.CAUTIOUS]
 	for i in count:
 		var h := Hole.new()
 		var is_player := i == 0
@@ -356,7 +357,8 @@ func _spawn_holes() -> void:
 			h.controller = BotAI.new(h, self, randf_range(skill.x, skill.y),
 				GameState.bot_chase_start(),
 				GameState.difficulty != GameState.Difficulty.EASY,
-				GameState.bot_shift_gap())
+				GameState.bot_shift_gap(),
+				styles[(i - 1) % styles.size()])
 		holes.append(h)
 
 
