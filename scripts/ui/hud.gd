@@ -35,6 +35,7 @@ var shift_button: Button
 var _shift_fill: ShiftFill
 var _shift_label: Label
 var _shift_banner: Label
+var _zone_label: Label
 var _hint: ShiftHint
 var _flash: ColorRect
 var _fade: ColorRect
@@ -205,6 +206,15 @@ func _build_shift_button() -> void:
 	_shift_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_shift_banner)
 
+	# Battle only: a live countdown once the player leaves the safe zone.
+	_zone_label = UiTheme.label("", 32, HORIZONTAL_ALIGNMENT_CENTER, 800)
+	_zone_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_zone_label.position = Vector2(-220, -318)
+	_zone_label.custom_minimum_size = Vector2(440, 0)
+	_zone_label.add_theme_color_override("font_color", Color("ff5a5f"))
+	_zone_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_zone_label)
+
 	# One-time hint above the button for the very first match.
 	_hint = ShiftHint.new()
 	_hint.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
@@ -230,6 +240,15 @@ func show_shift_hint(text := "") -> void:
 
 func hide_shift_hint() -> void:
 	_hint.visible = false
+
+
+## Seconds left before the zone eliminates the player; negative hides the line.
+func set_zone(seconds: float) -> void:
+	if seconds < 0.0:
+		_zone_label.text = ""
+		return
+	_zone_label.text = tr("ZONE_LEAVING") % int(ceil(seconds))
+	_zone_label.modulate.a = 0.75 + 0.25 * sin(Time.get_ticks_msec() * 0.012)
 
 
 ## ready: can press now; cooldown_left: seconds until ready; active: shifted, active_left: seconds left.
@@ -442,6 +461,7 @@ func show_results(title: String, lines: Array) -> void:
 	_pause_button.visible = false
 	shift_button.visible = false
 	_shift_banner.text = ""
+	_zone_label.text = ""
 	_notice.text = ""
 	_combo_label.text = ""
 	_hint.visible = false

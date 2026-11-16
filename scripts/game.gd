@@ -1501,6 +1501,10 @@ func _update_hud() -> void:
 	hud.set_level(player.level, HoleRules.level_progress(player.points))
 	hud.set_effects(player.effects)
 	hud.set_combo(player.combo)
+	if mode == GameState.Mode.BATTLE and player.alive and player.out_of_zone > 0.0:
+		hud.set_zone(maxf(ZONE_OUT_LIMIT - player.out_of_zone, 0.0))
+	else:
+		hud.set_zone(-1.0)
 	match mode:
 		GameState.Mode.SOLO:
 			hud.set_info(tr("CITY_EATEN") % _percent())

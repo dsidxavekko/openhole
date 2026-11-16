@@ -100,3 +100,4 @@ GOAL_GOLD,Gold,Золото
 SOLO_GOAL,Medal: %s · next: %s %d%%,Медаль: %s · далі: %s %d%%
 SOLO_NEXT,Next medal: %s %d%%,Наступна медаль: %s %d%%
 SOLO_GOAL_DONE,%s — the whole city is yours!,%s — усе місто твоє!
+ZONE_LEAVING,Out of zone: %ds,Поза зоною: %ds
