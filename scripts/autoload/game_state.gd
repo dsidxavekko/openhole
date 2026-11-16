@@ -36,6 +36,10 @@ var volume := 0.8
 var shake := true
 var show_fps := false
 var skin := 0
+var left_handed := false
+var flashes := true
+## Achievements unlocked in the last match, shown as a toast in the menu.
+var pending_achievements: Array[String] = []
 
 
 func _ready() -> void:

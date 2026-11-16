@@ -1568,6 +1568,7 @@ func _finish() -> void:
 	# Smoke runs must not touch the player's records.
 	var save := not GameState.autoplay
 	var stats_before := Skins.current_stats()
+	var ach_before := Achievements.current_stats()
 	var key := GameState.record_key()
 	var lines := []
 	var title := tr("TIME_UP")
@@ -1585,6 +1586,14 @@ func _finish() -> void:
 				record = Save.submit_record(key, pct)
 				if GameState.daily:
 					Save.submit_record("solo", pct)
+					var today := GameState.daily_seed()
+					var last := int(Save.get_setting("daily_last", 0))
+					if last != today:
+						var streak := int(Save.get_setting("daily_streak", 1))
+						streak = streak + 1 if last == GameState.daily_seed_offset(1) else 1
+						Save.set_setting("daily_streak", streak)
+						Save.set_setting("daily_last", today)
+						Save.submit_record("best_daily_streak", streak)
 					if player.shifts_used > 0:
 						Save.add_counter(GameState.daily_shifts_key(), player.shifts_used)
 		GameState.Mode.CLASSIC:
@@ -1624,6 +1633,10 @@ func _finish() -> void:
 		for i in Skins.unlocked_set(Skins.current_stats()):
 			if not before.has(i):
 				lines.append(tr("NEW_SKIN") % tr(Skins.get_skin(i).name))
+		for i in Achievements.new_set(ach_before, Achievements.current_stats()):
+			var ach_name := Achievements.name_of(i)
+			lines.append(tr("NEW_ACHIEVEMENT") % ach_name)
+			GameState.pending_achievements.append(ach_name)
 	if not GameState.daily:
 		lines.append(tr("MAP_SEED") % GameState.map_seed)
 	Sfx.play("end")

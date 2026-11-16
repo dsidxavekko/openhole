@@ -43,6 +43,8 @@ func _ready() -> void:
 	if not GameState.autoplay and not _wants_screenshot() and not Save.get_setting("seen_help", false):
 		Save.set_setting("seen_help", true)
 		_open_help.call_deferred()
+	if not GameState.pending_achievements.is_empty():
+		_show_achievement_toast.call_deferred()
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--screenshot="):
 			_take_screenshot(arg.trim_prefix("--screenshot="))
@@ -207,6 +209,9 @@ func _fill_cards() -> void:
 	var daily_right := tr("BEST_TODAY") % ("%.1f%%" % daily_best) if daily_best > 0 else _today()
 	if daily_shifts > 0:
 		daily_right += "  ·  " + tr("SHIFTS_TODAY") % daily_shifts
+	var streak := GameState.daily_streak()
+	if streak > 1:
+		daily_right += "  ·  " + tr("STREAK") % streak
 	var specs := [
 		{"title": tr("DAILY"), "desc": tr("DESC_DAILY"), "color": UiTheme.CARD_DAILY, "icon": "daily",
 			"right": daily_right,
@@ -378,6 +383,34 @@ func _open_help() -> void:
 
 func _open_stats() -> void:
 	_open_sheet(StatsPanel.new())
+
+
+## A short banner over the menu after a match that unlocked achievements.
+func _show_achievement_toast() -> void:
+	if GameState.pending_achievements.is_empty():
+		return
+	var names := GameState.pending_achievements.duplicate()
+	GameState.pending_achievements.clear()
+	var style := UiTheme.rounded(Color(0.17, 0.11, 0.42, 0.98), 22)
+	style.content_margin_left = 24
+	style.content_margin_right = 24
+	style.content_margin_top = 14
+	style.content_margin_bottom = 14
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", style)
+	panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	panel.position = Vector2(-320, 18)
+	panel.custom_minimum_size = Vector2(640, 0)
+	var text := UiTheme.label(tr("ACH_UNLOCKED") % ", ".join(names), 26, HORIZONTAL_ALIGNMENT_CENTER, 700)
+	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	panel.add_child(text)
+	add_child(panel)
+	panel.modulate.a = 0.0
+	var tw := create_tween()
+	tw.tween_property(panel, "modulate:a", 1.0, 0.25)
+	tw.tween_interval(3.5)
+	tw.tween_property(panel, "modulate:a", 0.0, 0.4)
+	tw.tween_callback(panel.queue_free)
 
 
 ## The settings sheet changed the locale: rebuild the whole menu in the new one.

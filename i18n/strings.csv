@@ -121,3 +121,22 @@ STATS_BEST_CLASSIC,Best Classic: %d,Рекорд Класики: %d
 STATS_BEST_SOLO,Best Solo: %.1f%%,Рекорд Соло: %.1f%%
 STATS_STREAK,Daily streak: %d,Серія Daily: %d
 STATS_TIME,Play time: %d:%02d,Час у грі: %d:%02d
+STREAK,Streak %d,Серія %d
+NEW_ACHIEVEMENT,Achievement: %s,Досягнення: %s
+ACH_UNLOCKED,Achievement unlocked: %s,Відкрито досягнення: %s
+STATS_ACHIEVEMENTS,Achievements,Досягнення
+ACH_FIRST_BITE,First bite,Перший шматок
+ACH_HUNDRED,Hundred bites,Сто шматків
+ACH_THOUSAND,Thousand bites,Тисяча шматків
+ACH_FIVE_THOUSAND,Five thousand bites,П'ять тисяч шматків
+ACH_FIRST_SHIFT,First shift kill,Перший кіл на Зсуві
+ACH_TEN_SHIFT,Ten shift kills,Десять кілів на Зсуві
+ACH_CLASSIC_1000,Classic: 1000 points,Класика: 1000 очок
+ACH_CLASSIC_3000,Classic: 3000 points,Класика: 3000 очок
+ACH_SOLO_40,Solo: 40% of the city,Соло: 40% міста
+ACH_SOLO_60,Solo: 60% of the city,Соло: 60% міста
+ACH_BATTLE_WIN,First battle win,Перша перемога в Битві
+ACH_BATTLE_FIVE,Five battle wins,П'ять перемог у Битві
+ACH_MATCHES_10,Ten matches,Десять матчів
+ACH_STREAK_3,Three-day streak,Серія три дні
+ACH_STREAK_7,Seven-day streak,Серія сім днів

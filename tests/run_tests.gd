@@ -89,6 +89,17 @@ func _init() -> void:
 	_check(BotAI.profile(99)["chase"] == 1.0, "an unknown style falls back to balanced")
 	_check(BotAI.PROFILES.size() == 4, "every style has a profile")
 
+	print("Achievements")
+	_check(Achievements.count() == Achievements.LIST.size(), "every achievement is listed")
+	_check(Achievements.earned_set({}).is_empty(), "a fresh save has no achievements")
+	_check(Achievements.earned_set({"total_eaten": 1}).has(0), "the first bite is an achievement")
+	var everything := {"total_eaten": 1e9, "shift_kills": 1e9, "classic": 1e9, "solo": 100,
+		"battle_wins": 1e9, "matches": 1e9, "best_daily_streak": 1e9}
+	_check(Achievements.earned_set(everything).size() == Achievements.count(), "every achievement can be earned")
+	_check(Achievements.new_set({}, {"total_eaten": 1}) == [0], "a new achievement is reported once")
+	_check(Achievements.new_set({"total_eaten": 1}, {"total_eaten": 1}).is_empty(), "nothing new without progress")
+	_check(Achievements.progress_text(8, {"solo": 12.5}) == "12/40%", "solo progress uses percent")
+
 	print("Skins")
 	_check(Skins.unlocked_with({}, 0) and Skins.unlocked_with({}, 1), "first skins are free")
 	_check(not Skins.unlocked_with({}, Skins.count() - 1), "last skin starts locked")
