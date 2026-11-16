@@ -73,6 +73,15 @@ func _init() -> void:
 	_check(is_equal_approx(HoleRules.speed_for_radius(30.0), HoleRules.speed_for_radius(HoleRules.SPEED_CAP_RADIUS)), "speed plateaus for big holes")
 	_check(HoleRules.speed_for_radius(30.0) < 7.0 + 30.0 * 0.45, "a max hole is slower than on the old linear curve")
 
+	print("Solo goals")
+	_check(SoloGoals.tier_for(0.0) == -1, "an empty city earns no medal")
+	_check(SoloGoals.tier_for(25.0) == 0, "25 percent is bronze")
+	_check(SoloGoals.tier_for(44.9) == 0, "just below silver is still bronze")
+	_check(SoloGoals.tier_for(45.0) == 1, "45 percent is silver")
+	_check(SoloGoals.tier_for(65.0) == 2, "65 percent is gold")
+	_check(SoloGoals.tier_for(100.0) == 2, "a full city stays gold")
+	_check(SoloGoals.progress_line(10.0) != "" and SoloGoals.progress_line(70.0) != "", "goal lines are built")
+
 	print("Skins")
 	_check(Skins.unlocked_with({}, 0) and Skins.unlocked_with({}, 1), "first skins are free")
 	_check(not Skins.unlocked_with({}, Skins.count() - 1), "last skin starts locked")

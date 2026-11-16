@@ -43,7 +43,7 @@ var falling: Array[Edible] = []
 var total_points := 0
 var total_count := 0
 var eaten_count := 0
-var eaten_weight := 0.0
+var eaten_points := 0
 var bound := 100.0
 var time_left := 120.0
 var running := false
@@ -899,7 +899,7 @@ func _eat(e: Edible, h: Hole) -> void:
 		h.add_points(gained)
 		if h == player:
 			eaten_count += 1
-			eaten_weight += e.weight
+			eaten_points += e.points
 			_best_item = maxi(_best_item, e.whole_points if debris else e.points)
 		if _me(h):
 			_eat_feedback(e, h, gained)
@@ -1517,7 +1517,8 @@ func _update_hud() -> void:
 
 
 func _percent() -> float:
-	return minf(100.0, 100.0 * eaten_weight / maxf(total_count, 1))
+	# By value, not by item count: a skyscraper is worth more than a pedestrian.
+	return minf(100.0, 100.0 * eaten_points / maxf(total_points, 1))
 
 
 ## Highlights of the match for the results screen: the biggest single item,
@@ -1571,6 +1572,7 @@ func _finish() -> void:
 			if GameState.daily:
 				title = tr("DAILY_DONE")
 			lines.append(tr("CITY_EATEN") % pct)
+			lines.append(SoloGoals.progress_line(pct))
 			lines.append(tr("POINTS") % player.points)
 			_append_shift_stats(lines)
 			if save:
@@ -1623,8 +1625,8 @@ func _finish() -> void:
 		all_powerups += h.powerups_taken
 		if h != player:
 			bot_shifts += h.shifts_used
-	print("MATCH_END mode=%s points=%d eaten=%d/%d city=%.1f%% items=%d level=%d powerups=%d/%d movers_left=%d flung=%d best_item=%d fractured=%d debris_peak=%d frame_ms=%.2f shifts=%d shift_eats=%d chain_max=%d bot_shifts=%d" % [key,
-		player.points, eaten_count, total_count, _percent(), roundi(eaten_weight), player.level, player.powerups_taken, all_powerups, movers.size(),
+	print("MATCH_END mode=%s points=%d eaten=%d/%d city=%.1f%% items=%d value=%d/%d level=%d powerups=%d/%d movers_left=%d flung=%d best_item=%d fractured=%d debris_peak=%d frame_ms=%.2f shifts=%d shift_eats=%d chain_max=%d bot_shifts=%d" % [key,
+		player.points, eaten_count, total_count, _percent(), eaten_count, eaten_points, total_points, player.level, player.powerups_taken, all_powerups, movers.size(),
 		_flung.size(), _best_item, demolition.fractured, demolition.debris_peak, _frame_ms_sum / maxf(_frames, 1),
 		player.shifts_used, player.holes_eaten_shifted, _shift_chain_max, bot_shifts])
 	if GameState.autoplay:

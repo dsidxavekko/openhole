@@ -199,7 +199,7 @@ func _fill_cards() -> void:
 			"icon": "classic", "right": _best("%d" % int(Save.get_record("classic"))),
 			"go": _start.bind(GameState.Mode.CLASSIC, false)},
 		{"title": tr("MODE_SOLO"), "desc": tr("DESC_SOLO"), "color": UiTheme.CARD_SOLO, "icon": "solo",
-			"right": _best("%.1f%%" % Save.get_record("solo")), "go": _start.bind(GameState.Mode.SOLO, false)},
+			"right": _best_solo(), "go": _start.bind(GameState.Mode.SOLO, false)},
 		{"title": tr("MODE_BATTLE"), "desc": tr("DESC_BATTLE"), "color": UiTheme.CARD_BATTLE, "icon": "battle",
 			"right": tr("WINS") % int(Save.get_record("battle_wins")), "go": _start.bind(GameState.Mode.BATTLE, false)},
 	]
@@ -230,6 +230,16 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _best(value: String) -> String:
 	return tr("BEST") % value if value != "0" and value != "0.0%" else ""
+
+
+## Solo best with the medal it earns, e.g. "Best: 52.4% · Silver".
+func _best_solo() -> String:
+	var pct: float = Save.get_record("solo")
+	if pct <= 0.0:
+		return ""
+	var text: String = tr("BEST") % ("%.1f%%" % pct)
+	var medal := SoloGoals.tier_name(pct)
+	return text + ("  ·  " + medal if medal != "" else "")
 
 
 func _today() -> String:

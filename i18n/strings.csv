@@ -94,3 +94,9 @@ TUT_DIVE2,Dive into the big hole!,Пірни у велику діру!
 TUT_DONE,That is the swap: the small one hunts!,Ось зсув: мала діра полює!
 SHIFT_HINT,Press SHIFT to swap roles!,Натисни SHIFT — зміни роль!
 SHIFTS_TODAY,Shifts: %d,Зсувів: %d
+GOAL_BRONZE,Bronze,Бронза
+GOAL_SILVER,Silver,Срібло
+GOAL_GOLD,Gold,Золото
+SOLO_GOAL,Medal: %s · next: %s %d%%,Медаль: %s · далі: %s %d%%
+SOLO_NEXT,Next medal: %s %d%%,Наступна медаль: %s %d%%
+SOLO_GOAL_DONE,%s — the whole city is yours!,%s — усе місто твоє!
