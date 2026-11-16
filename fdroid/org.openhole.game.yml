@@ -21,7 +21,7 @@ Repo: https://github.com/dsidxavekko/openhole.git
 Builds:
   - versionName: 0.6.0
     versionCode: 12
-    commit: 697b7968ff62d30f422ea98713d40cace1a3bb4e
+    commit: 38d1706d23f17cfcd56bf2b407aef1c991b37934
     timeout: 14400
     sudo:
       - apt-get update
