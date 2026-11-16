@@ -1615,6 +1615,9 @@ func _finish() -> void:
 	_append_highlights(lines)
 	if save:
 		Save.add_counter("total_eaten", eaten_count)
+		Save.add_counter("matches")
+		Save.add_counter("matches_" + GameState.mode_key())
+		Save.add_counter("time_played", maxi(1, int(round(GameState.match_time() - time_left))))
 		if player.holes_eaten_shifted > 0:
 			Save.add_counter("shift_kills", player.holes_eaten_shifted)
 		var before := Skins.unlocked_set(stats_before)

@@ -68,6 +68,8 @@ func _take_screenshot(path: String) -> void:
 			_open_settings()
 		if arg == "--shot-sheet=help":
 			_open_help()
+		if arg == "--shot-sheet=stats":
+			_open_stats()
 	await get_tree().create_timer(delay).timeout
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
@@ -319,6 +321,7 @@ func _make_bottom_bar() -> Control:
 	var help := _round_button("", _open_help)
 	help.text = "?"
 	bar.add_child(help)
+	bar.add_child(_round_button("stats", _open_stats))
 	bar.add_child(_round_button("skins", _open_skins))
 	bar.add_child(_round_button("settings", _open_settings))
 	_lang_button = _round_button("", _toggle_language)
@@ -371,6 +374,10 @@ func _open_settings() -> void:
 
 func _open_help() -> void:
 	_open_sheet(HelpPanel.new())
+
+
+func _open_stats() -> void:
+	_open_sheet(StatsPanel.new())
 
 
 ## The settings sheet changed the locale: rebuild the whole menu in the new one.
@@ -537,6 +544,15 @@ class BarIcon extends Control:
 				draw_arc(c, 30.0, PI * 0.66, PI * 1.33, 12, Color("4cc9f0"), 9.0, true)
 				draw_arc(c, 30.0, PI * 1.33, TAU, 12, Color("80ed99"), 9.0, true)
 				draw_circle(c, 22.0, Color(0.05, 0.03, 0.1))
+			"help":
+				var f := get_theme_default_font()
+				var w := f.get_string_size("?", HORIZONTAL_ALIGNMENT_LEFT, -1, 56).x
+				draw_string(f, Vector2(c.x - w / 2.0, c.y + 20), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 56, Color.WHITE)
+			"stats":
+				var heights := [22.0, 38.0, 30.0]
+				for i in 3:
+					var h: float = heights[i]
+					draw_rect(Rect2(c.x - 30.0 + i * 22.0, c.y + 22.0 - h, 14.0, h), Color.WHITE)
 			"settings":
 				for i in 8:
 					var a := TAU * i / 8.0

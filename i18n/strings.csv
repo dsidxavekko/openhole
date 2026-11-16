@@ -112,3 +112,12 @@ HELP_SHIFT_T,Shift,Зсув
 HELP_SHIFT,"For 3.5 s you are small, fast and cannot be eaten. Dive into any hole to swallow it, but you earn nothing from the city. Then 8 s of cooldown.","3,5 с ти малий, швидкий і невразливий. Пірни в будь-яку діру, щоб її проковтнути, але з міста очок не отримуєш. Далі 8 с перезарядки."
 HELP_ZONE_T,Battle zone,Зона Битви
 HELP_ZONE,"In Battle the safe zone shrinks. Outside it you fade away in 4 seconds.","У Битві безпечна зона звужується. Поза нею ти розчиняєшся за 4 секунди."
+STATS,Statistics,Статистика
+STATS_MATCHES,Matches: %d,Матчів: %d
+STATS_CITY,Things eaten: %d,З'їдено предметів: %d
+STATS_SHIFT_KILLS,Shift kills: %d,Кіл на Зсуві: %d
+STATS_BATTLE_WINS,Battle wins: %d,Перемог у Битві: %d
+STATS_BEST_CLASSIC,Best Classic: %d,Рекорд Класики: %d
+STATS_BEST_SOLO,Best Solo: %.1f%%,Рекорд Соло: %.1f%%
+STATS_STREAK,Daily streak: %d,Серія Daily: %d
+STATS_TIME,Play time: %d:%02d,Час у грі: %d:%02d

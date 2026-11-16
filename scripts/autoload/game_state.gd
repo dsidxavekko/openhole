@@ -119,6 +119,22 @@ func daily_seed() -> int:
 	return d.year * 10000 + d.month * 100 + d.day
 
 
+## Day key `days` before today (1 = yesterday). Noon avoids DST edges.
+func daily_seed_offset(days: int) -> int:
+	var d := Time.get_date_dict_from_system()
+	var noon := {"year": d.year, "month": d.month, "day": d.day, "hour": 12}
+	var p := Time.get_date_dict_from_unix_time(Time.get_unix_time_from_datetime_dict(noon) - days * 86400)
+	return p.year * 10000 + p.month * 100 + p.day
+
+
+## Days in a row with a finished Daily; 0 once the streak is broken.
+func daily_streak() -> int:
+	var last := int(Save.get_setting("daily_last", 0))
+	if last != daily_seed() and last != daily_seed_offset(1):
+		return 0
+	return int(Save.get_setting("daily_streak", 0))
+
+
 func match_time() -> float:
 	return 150.0 if mode == Mode.BATTLE else 120.0
 
