@@ -893,16 +893,20 @@ func _eat(e: Edible, h: Hole) -> void:
 		demolition.forget(e)
 		demolition.release(e)
 	if h and h.alive:
-		# Chunks of one building do not build up a streak on their own.
-		var gained := h.streak_points(e.points) if debris else h.combo_points(e.points)
-		# Things still falling when the hole shifted finish falling but are worth nothing.
-		if h.is_shifted():
-			gained = 0
+		# A shifted hole only finishes off things already falling in: they are
+		# worth nothing, so they build no streak and give no credit towards the
+		# city (the Solo medal and records are counted by value).
+		var shifted := h.is_shifted()
+		var gained := 0
+		if not shifted:
+			# Chunks of one building do not build up a streak on their own.
+			gained = h.streak_points(e.points) if debris else h.combo_points(e.points)
 		h.add_points(gained)
 		if h == player:
 			eaten_count += 1
-			eaten_points += e.points
-			_best_item = maxi(_best_item, e.whole_points if debris else e.points)
+			if not shifted:
+				eaten_points += e.points
+				_best_item = maxi(_best_item, e.whole_points if debris else e.points)
 		if _me(h):
 			_eat_feedback(e, h, gained)
 	e.queue_free()
