@@ -19,9 +19,9 @@ RepoType: git
 Repo: https://github.com/dsidxavekko/openhole.git
 
 Builds:
-  - versionName: 0.6.0
-    versionCode: 12
-    commit: 38d1706d23f17cfcd56bf2b407aef1c991b37934
+  - versionName: 0.6.5
+    versionCode: 13
+    commit: b349f1bfa52121af3b1cc8c6c934d63629a63c1b
     timeout: 14400
     sudo:
       - apt-get update
@@ -54,5 +54,5 @@ Builds:
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
 UpdateCheckData: export_presets.cfg|version/code=(\d+)|.|version/name="([\d.]+)"
-CurrentVersion: 0.6.0
-CurrentVersionCode: 12
+CurrentVersion: 0.6.5
+CurrentVersionCode: 13
