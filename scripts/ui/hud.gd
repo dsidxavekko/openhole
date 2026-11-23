@@ -388,8 +388,7 @@ func feed(text: String, color: Color) -> void:
 	var l := UiTheme.label(text, 20, HORIZONTAL_ALIGNMENT_LEFT, 600)
 	l.modulate = Color(color.lightened(0.35), 1.0)
 	_feed_box.add_child(l)
-	while _feed_box.get_child_count() > 4:
-		_feed_box.get_child(0).queue_free()
+	UiTheme.trim_rows(_feed_box, 4)
 	var tw := l.create_tween()
 	tw.tween_interval(3.0)
 	tw.tween_property(l, "modulate:a", 0.0, 0.6)
@@ -503,8 +502,7 @@ func show_results(title: String, lines: Array) -> void:
 	_notice.text = ""
 	_combo_label.text = ""
 	_hint.visible = false
-	for c in _feed_box.get_children():
-		c.queue_free()
+	UiTheme.trim_rows(_feed_box, 0)
 	_pointers.pointers = []
 	_pointers.queue_redraw()
 	for c in _results_box.get_children():

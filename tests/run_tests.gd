@@ -428,5 +428,19 @@ func _init() -> void:
 	_check(is_equal_approx(chunk.weight, 1.0), "a normal item weighs one city object")
 	chunk.free()
 
+	print("HUD kill feed")
+	var feed := VBoxContainer.new()
+	root.add_child(feed)
+	for i in 6:
+		feed.add_child(Label.new())
+	UiTheme.trim_rows(feed, 4)
+	_check(feed.get_child_count() == 4, "the kill feed keeps the newest four lines (4)")
+	UiTheme.trim_rows(feed, 4)
+	_check(feed.get_child_count() == 4, "trimming an already short feed changes nothing")
+	UiTheme.trim_rows(feed, 0)
+	_check(feed.get_child_count() == 0, "the whole feed can be cleared (0)")
+	root.remove_child(feed)
+	feed.free()
+
 	print("FAILED: %d" % _fails if _fails else "ALL PASSED")
 	quit(1 if _fails else 0)

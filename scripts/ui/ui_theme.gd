@@ -209,3 +209,15 @@ static func bounce(c: Control) -> void:
 	var tw := c.create_tween()
 	tw.tween_property(c, "scale", Vector2(0.94, 0.94), 0.06)
 	tw.tween_property(c, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## Keeps the newest `max_rows` children of `box` and drops the oldest ones.
+## They are detached before queue_free(): a queued node stays in the tree until
+## the end of the frame, so "while get_child_count() > max_rows: free(0)" never
+## ends and freezes the game. Lives here (not in Hud) so the headless tests can
+## reach it without the autoloads Hud needs.
+static func trim_rows(box: Node, max_rows: int) -> void:
+	var kids := box.get_children()
+	for i in maxi(kids.size() - max_rows, 0):
+		box.remove_child(kids[i])
+		kids[i].queue_free()
