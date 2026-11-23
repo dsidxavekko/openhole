@@ -65,7 +65,7 @@ func _ready() -> void:
 	volume = Save.get_setting("volume", 0.8)
 	shake = Save.get_setting("shake", true)
 	show_fps = Save.get_setting("fps", false)
-	skin = Save.get_setting("skin", 0)
+	skin = clampi(Save.get_setting("skin", 0), 0, Skins.count() - 1)
 	graphics = clampi(Save.get_setting("graphics", GraphicsQuality.Level.HIGH), 0, GraphicsQuality.KEYS.size() - 1)
 	left_handed = Save.get_setting("left_handed", false)
 	flashes = Save.get_setting("flashes", true)

@@ -425,6 +425,11 @@ func _open_sheet(content: Control) -> void:
 		_sheet_tween.kill()
 	if _sheet:
 		_sheet.queue_free()
+	# A sheet that was still sliding out when this one opened lost its queue_free
+	# with the killed tween: sweep the leftovers so no ghost stays on the layer.
+	for c in _sheet_layer.get_children():
+		if c is PanelContainer and c != _sheet:
+			c.queue_free()
 	_sheet = PanelContainer.new()
 	_sheet.add_theme_stylebox_override("panel", UiTheme.sheet())
 	_sheet.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
