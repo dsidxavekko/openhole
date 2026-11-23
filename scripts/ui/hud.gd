@@ -101,11 +101,9 @@ func _ready() -> void:
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_pause_button.add_child(icon)
 	_pause_button.focus_mode = Control.FOCUS_NONE
-	_pause_button.pressed.connect(func():
-		if _pause.visible:
-			resume.emit()
-		else:
-			get_parent().pause())
+	# One path for the button and the Esc/Start key (the pause screen covers the
+	# button anyway, so it can never be a resume toggle).
+	_pause_button.pressed.connect(func(): pause_pressed.emit())
 	_root.add_child(_pause_button)
 	joystick.blockers.append(_pause_button)
 
@@ -131,6 +129,8 @@ func _ready() -> void:
 	_notice.custom_minimum_size = Vector2(680, 0)
 	_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_root.add_child(_notice)
+	# The pop-in must grow from the middle; size is only known after a layout.
+	_notice.resized.connect(func(): _notice.pivot_offset = _notice.size / 2.0)
 
 	_fps = UiTheme.label("", 20, HORIZONTAL_ALIGNMENT_LEFT)
 	# Bottom-right: the SHIFT button takes the bottom-left corner.
@@ -159,6 +159,7 @@ func _ready() -> void:
 	_results_box = VBoxContainer.new()
 	_results_box.add_theme_constant_override("separation", 16)
 	_results.add_child(_results_box)
+	_results.resized.connect(func(): _results.pivot_offset = _results.size / 2.0)
 
 	# Fade in from black on top of everything at the start of the match.
 	_fade = ColorRect.new()
@@ -188,7 +189,7 @@ func _build_shift_button() -> void:
 	_shift_fill.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_shift_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	shift_button.add_child(_shift_fill)
-	_shift_label = UiTheme.label("SHIFT", 34, HORIZONTAL_ALIGNMENT_CENTER, 800)
+	_shift_label = UiTheme.label(tr("PU_SHIFT").to_upper(), 34, HORIZONTAL_ALIGNMENT_CENTER, 800)
 	_shift_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_shift_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_shift_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -291,12 +292,13 @@ func set_shift(ready: bool, cooldown_left: float, active: bool, active_left: flo
 	if active:
 		_shift_fill.value = active_left / Powerup.DURATIONS[Powerup.Kind.SHIFT]
 		_shift_fill.active = true
-		_shift_label.text = "SHIFT"
+		_shift_label.text = tr("PU_SHIFT").to_upper()
 		_shift_banner.text = "%s  %.1f" % [tr("PU_SHIFT").to_upper(), active_left]
 	else:
 		_shift_fill.active = false
 		_shift_fill.value = 1.0 if ready else 1.0 - clampf(cooldown_left / HoleRules.SHIFT_COOLDOWN, 0.0, 1.0)
-		_shift_label.text = "SHIFT" if ready or cooldown_left <= 0.0 else "%d" % int(ceil(cooldown_left))
+		_shift_label.text = tr("PU_SHIFT").to_upper() if ready or cooldown_left <= 0.0 \
+			else "%d" % int(ceil(cooldown_left))
 		_shift_banner.text = ""
 	_shift_label.modulate.a = 1.0 if ready or active else 0.7
 	_shift_fill.queue_redraw()
@@ -360,12 +362,19 @@ func set_level(level: int, progress: float) -> void:
 func set_effects(effects: Dictionary) -> void:
 	var parts: PackedStringArray = []
 	var strongest := -1
+	var best_left := -1.0
 	for k in effects:
 		parts.append("%s %d" % [tr(Powerup.NAMES[k]), int(ceil(effects[k]))])
-		strongest = k
+		# The line takes the colour of the effect that lasts longest, not of
+		# whichever key the dictionary happens to iterate last.
+		if float(effects[k]) > best_left:
+			best_left = float(effects[k])
+			strongest = k
 	_effects_label.text = "  ·  ".join(parts)
 	if strongest >= 0:
 		_effects_label.add_theme_color_override("font_color", (Powerup.COLORS[strongest] as Color).lightened(0.3))
+	else:
+		_effects_label.remove_theme_color_override("font_color")
 
 
 func set_combo(combo: int) -> void:
@@ -417,7 +426,6 @@ func set_pointers(pointers: Array) -> void:
 func notice(text: String, seconds := 2.5) -> void:
 	_notice.text = text
 	_notice_time = seconds
-	_notice.pivot_offset = _notice.size / 2.0
 	_notice.scale = Vector2(1.25, 1.25)
 	create_tween().tween_property(_notice, "scale", Vector2.ONE, 0.25) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -518,7 +526,6 @@ func show_results(title: String, lines: Array) -> void:
 	_results_box.add_child(_button(tr("MENU"), func(): to_menu.emit()))
 	_results.visible = true
 	_focus_first.call_deferred(_results_box)
-	_results.pivot_offset = _results.size / 2.0
 	_results.scale = Vector2(0.8, 0.8)
 	_results.modulate.a = 0.0
 	var tw := create_tween().set_parallel()
