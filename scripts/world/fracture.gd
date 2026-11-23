@@ -19,6 +19,10 @@ const HEIGHT_WEIGHT := 0.35
 
 ## Flattens every MeshInstance3D under `root` into one soup per material.
 ## Positions are in the space of `root`. Returns {soups: Array, mats: Array}.
+## The root's own transform is deliberately ignored: EdibleFactory replaces the
+## scene root's position with -center and ModelLibrary measures the model with
+## the root applied, so both agree only while every model root is identity (the
+## "Model roots" test keeps that true).
 static func extract(root: Node) -> Dictionary:
 	var out := {"soups": [], "mats": []}
 	_extract(root, Transform3D.IDENTITY, out, true)
