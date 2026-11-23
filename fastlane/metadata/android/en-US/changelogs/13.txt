@@ -1,0 +1,1 @@
+Fixed: the kill feed could freeze a match, both map arrows in Settings stepped forward, chunks that fell beside a hole could hang in the air, and a Shift worth no points still counted towards the Solo medal. The SHIFT button label is translated now.

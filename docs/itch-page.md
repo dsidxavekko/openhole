@@ -60,6 +60,12 @@ bigger hole appears close by and time slows down until you press the button.
 
 ## What's new since launch
 
+- **v0.6.5** — a bug-fix pass: the kill feed could freeze a match in Battle and
+  Classic, both map arrows in Settings walked forward, chunks of a building that
+  fell beside the hole could stay hanging in the air, and a Shift that is worth
+  no points still counted towards the Solo medal. The SHIFT button label is
+  translated, the skin grid no longer jumps and the volume slider writes to the
+  save file far less often.
 - **v0.6.0** — a how-to-play sheet on first launch, a stats screen with 15
   achievements and a daily streak, graphics quality presets for phones, a
   left-handed layout and a screen-flash toggle; Solo counts the city by value
