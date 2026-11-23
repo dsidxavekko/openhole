@@ -665,6 +665,9 @@ func _wake(e: Edible) -> void:
 		if was_moving:
 			e.linear_velocity = e.transform.basis.z * e.move_speed
 		awake[e] = true
+		# A chunk thawed here (not by a blow-up) is not in Demolition's live list,
+		# so nothing would settle and freeze it again.
+		demolition.track(e)
 	e.sleeping = false
 
 

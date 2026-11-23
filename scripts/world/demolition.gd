@@ -48,9 +48,15 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	wait_for_tasks()
+	_tasks.clear()
+
+
+## Blocks until every queued cut is done. The workers write into `_raw` under
+## the mutex, so nothing may drop them mid-flight (test runs use this too).
+func wait_for_tasks() -> void:
 	for t in _tasks:
 		WorkerThreadPool.wait_for_task_completion(t)
-	_tasks.clear()
 
 
 # --- Chunk shapes ----------------------------------------------------------
@@ -117,7 +123,27 @@ func _pieces(e: Edible) -> Array:
 		out.append({"mesh": mesh, "hull": hull, "centre": box.get_center(),
 			"vol": maxf(box.size.x * box.size.y * box.size.z, 0.001)})
 	_built[key] = out
+	# The raw triangles are the biggest thing this class holds (a whole model per
+	# key) and nothing needs them once the meshes exist.
+	_mutex.lock()
+	_raw.erase(key)
+	_mutex.unlock()
 	return out
+
+
+## True when the chunks of `e` are cut already. The per-tick queries
+## (Game._swallow_step, BotAI food search) must not cut a model themselves: the
+## worker does that, and doing it twice in the middle of a frame costs a hitch.
+func chunks_ready(e: Edible) -> bool:
+	if not e.breakable:
+		return false
+	var key := _key(e)
+	if _built.has(key):
+		return true
+	_mutex.lock()
+	var ready := _raw.has(key)
+	_mutex.unlock()
+	return ready
 
 
 func _build_mesh(pc: Dictionary, mats: Array, tint: Color) -> ArrayMesh:
@@ -255,6 +281,9 @@ func collapse(e: Edible, h: Hole) -> void:
 		e.falling_into = null
 		game._start_fall(e, h)
 		return
+	# Same support graph as fracture(): chunks that land beside the hole instead
+	# of inside it must still come down when the one under them is eaten.
+	DebrisRules.link_supports(pieces)
 	for d in pieces:
 		var out := d.position - origin
 		out.y = 0.0
@@ -335,6 +364,10 @@ func can_fracture(e: Edible, h: Hole, dist: float) -> bool:
 	var guess := e.fit_size / pow(DebrisRules.piece_count(e.kind, e.size), 1.0 / 3.0)
 	if not HoleRules.fits(guess * 0.6, h.radius):
 		return false
+	# Not cut yet (the worker is busy): ask again next tick instead of cutting the
+	# model here, in the middle of the physics step.
+	if not chunks_ready(e):
+		return false
 	return HoleRules.fits(_smallest_chunk(e), h.radius)
 
 
@@ -390,6 +423,14 @@ func forget(d: Edible) -> void:
 	_live.erase(d)
 
 
+## A chunk was woken outside the paths below (the hole nudged it, see Game._wake):
+## keep it on the books, or nothing would ever freeze it again and it stays a
+## live physics body for the rest of the match.
+func track(d: Edible) -> void:
+	if d.kind == "debris":
+		_live[d] = true
+
+
 ## Every half second: chunks that settled on the ground freeze like the rest
 ## of the city; over the limit, the farthest awake ones freeze too.
 func tick() -> void:
@@ -419,6 +460,10 @@ func _settle(d: Edible) -> void:
 	if d.position.distance_to(d.get_meta("home", d.position)) > 0.6:
 		release(d)
 	d.set_meta("home", d.position)
+	# Drop the speed before freezing, like Game._rebin does for the city: a chunk
+	# frozen mid-throw would otherwise shoot off with that speed when woken again.
+	d.linear_velocity = Vector3.ZERO
+	d.angular_velocity = Vector3.ZERO
 	d.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
 	d.freeze = true
 	game.awake.erase(d)

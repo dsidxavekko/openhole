@@ -442,5 +442,20 @@ func _init() -> void:
 	root.remove_child(feed)
 	feed.free()
 
+	print("Model roots")
+	# Fracture.extract() cuts in the space of the scene root, while ModelLibrary
+	# measures a model with that root's transform applied. Both agree only while
+	# the root itself is identity, which holds for every model shipped today.
+	var shifted_roots := []
+	for kind in ModelLibrary.MODELS:
+		for path: String in ModelLibrary.MODELS[kind]:
+			var model_scene: PackedScene = load("res://assets/kenney/%s.glb" % path)
+			var model_root: Node3D = model_scene.instantiate() if model_scene != null else null
+			if model_root == null or not model_root.transform.is_equal_approx(Transform3D.IDENTITY):
+				shifted_roots.append(path)
+			if model_root != null:
+				model_root.free()
+	_check(shifted_roots.is_empty(), "every model scene root is identity (%d bad)" % shifted_roots.size())
+
 	print("FAILED: %d" % _fails if _fails else "ALL PASSED")
 	quit(1 if _fails else 0)
