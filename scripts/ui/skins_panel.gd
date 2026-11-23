@@ -29,25 +29,32 @@ func _ready() -> void:
 
 
 func _build_grid() -> void:
-	for c in _grid.get_children():
-		c.queue_free()
+	if _grid.get_child_count() != Skins.count():
+		# First build (or the skin list changed): make the cells once.
+		for c in _grid.get_children():
+			_grid.remove_child(c)
+			c.queue_free()
+		for i in Skins.count():
+			var b := Button.new()
+			b.custom_minimum_size = Vector2(108, 108)
+			var prev := SkinPreview.new()
+			prev.skin = i
+			prev.set_anchors_preset(Control.PRESET_FULL_RECT)
+			prev.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			b.add_child(prev)
+			b.pressed.connect(_pick.bind(i))
+			_grid.add_child(b)
+	# Picking a skin only changes how the cells look, so restyle them in place:
+	# new buttons added beside the queued-for-deletion old ones would leave 22
+	# cells in a 5-column grid for a frame and make it jump.
 	for i in Skins.count():
-		var b := Button.new()
-		b.custom_minimum_size = Vector2(108, 108)
-		var selected := i == GameState.skin
+		var b := _grid.get_child(i) as Button
 		var bg := UiTheme.rounded(Color(1, 1, 1, 0.16 if i == _shown else 0.06), 24)
-		if selected:
+		if i == GameState.skin:
 			bg.border_color = UiTheme.ACCENT
 			bg.set_border_width_all(5)
 		UiTheme.style_button(b, bg)
-		var prev := SkinPreview.new()
-		prev.skin = i
-		prev.locked = not Skins.is_unlocked(i)
-		prev.set_anchors_preset(Control.PRESET_FULL_RECT)
-		prev.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		b.add_child(prev)
-		b.pressed.connect(_pick.bind(i))
-		_grid.add_child(b)
+		(b.get_child(0) as SkinPreview).locked = not Skins.is_unlocked(i)
 	_update_info()
 
 
