@@ -8,6 +8,8 @@ signal language_changed
 
 var in_menu := true
 var _body: VBoxContainer
+## Last time the volume was written to the save file (see the slider below).
+var _volume_saved_at := 0
 
 
 func _init(p_in_menu := true) -> void:
@@ -50,8 +52,17 @@ func _build() -> void:
 	vol.value = GameState.volume
 	vol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vol.custom_minimum_size.y = 56
-	vol.value_changed.connect(func(v: float): GameState.set_option("volume", "volume", v))
-	vol.drag_ended.connect(func(_c: bool): Sfx.play("ui"))
+	# Apply at once, but write the file at most twice a second: a drag fires this
+	# on every 0.05 step and every save is a synchronous write on the main thread.
+	vol.value_changed.connect(func(v: float):
+		GameState.volume = v
+		GameState.apply_volume()
+		if Time.get_ticks_msec() - _volume_saved_at > 500:
+			_volume_saved_at = Time.get_ticks_msec()
+			Save.set_setting("volume", v))
+	vol.drag_ended.connect(func(_c: bool):
+		Save.set_setting("volume", vol.value)
+		Sfx.play("ui"))
 	_row(tr("SOUND"), vol)
 
 	_toggle(tr("VIBRATION"), "vibration", "vibration")
@@ -75,8 +86,8 @@ func _build() -> void:
 			clampi(GameState.bot_count + dir, GameState.MIN_BOTS, GameState.MAX_BOTS))))
 	_row(tr("MAP_THEME"), _cycler(
 		func(): return tr(GameState.THEME_KEYS[GameState.map_theme]),
-		func(_dir: int): GameState.set_option("map_theme", "theme",
-			(GameState.map_theme + 1) % GameState.THEME_KEYS.size())))
+		func(dir: int): GameState.set_option("map_theme", "theme",
+			posmod(GameState.map_theme + dir, GameState.THEME_KEYS.size()))))
 
 	var seed_edit := LineEdit.new()
 	seed_edit.text = str(GameState.map_seed)

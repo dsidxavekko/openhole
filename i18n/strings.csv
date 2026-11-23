@@ -39,7 +39,7 @@ SOUND,Sound,Звук
 VIBRATION,Vibration,Вібрація
 CAMERA_SHAKE,Camera shake,Трясіння камери
 SHOW_FPS,Show FPS,Показувати FPS
-DIFFICULTY,Bots,Боти
+DIFFICULTY,Difficulty,Складність
 DIFF_EASY,Easy,Легкі
 DIFF_NORMAL,Normal,Звичайні
 DIFF_HARD,Hard,Сильні
