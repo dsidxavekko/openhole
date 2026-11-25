@@ -326,7 +326,7 @@ func blast(origin: Vector3, reach: float) -> void:
 		var power := HoleRules.blast_power(dist - e.extent * 0.4, reach)
 		if power <= 0.0:
 			continue
-		if e.kind != "debris" and e.breakable and e.freeze and not e.moving:
+		if e.kind != "debris" and e.breakable and e.freeze and not e.moving and chunks_ready(e):
 			var pieces := _spawn(e, true)
 			if pieces.is_empty():
 				continue
@@ -556,7 +556,7 @@ func _puff(at: Vector3, radius: float, amount: int) -> void:
 	p.emitting = false
 	p.global_position = Vector3(at.x, maxf(at.y, 0.0) + 0.5, at.z)
 	p.emission_sphere_radius = maxf(radius * 0.5, 0.5)
-	p.amount = clampi(amount, 6, 64)
+	p.amount = clampi(GraphicsQuality.particle_count(GameState.graphics, amount), 6, 64)
 	p.scale_amount_min = 0.8 + radius * 0.14
 	p.scale_amount_max = 1.5 + radius * 0.26
 	p.restart()

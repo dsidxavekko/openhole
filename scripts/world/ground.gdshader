@@ -20,6 +20,7 @@ uniform vec3 walk_color : source_color = vec3(0.78, 0.78, 0.76);
 uniform vec3 road_color : source_color = vec3(0.30, 0.31, 0.34);
 uniform vec3 line_color : source_color = vec3(0.95, 0.92, 0.75);
 uniform vec3 outside_color : source_color = vec3(0.38, 0.55, 0.36);
+uniform bool simple_ground = false;
 
 // Battle zone: x, z, radius; radius <= 0 disables it.
 uniform vec3 zone = vec3(0.0, 0.0, 0.0);
@@ -66,26 +67,31 @@ vec3 city_color(highp vec2 p) {
 	float inner_z = band(b.y, sidewalk, block_size - sidewalk, w.y);
 	float grass = inner_x * inner_z;
 
-	// Sidewalk: tile joints every 1.6 m.
-	vec3 walk_c = walk_color * (1.0 - 0.10 * max(step(0.93, fract(b.x * 0.625)),
-		step(0.93, fract(b.y * 0.625))));
-	// Grass: patchiness with occasional dirt spots.
-	float gn = vnoise(p * 0.5);
-	vec3 grass_c = grass_color * (0.84 + 0.32 * gn);
-	float dirt = step(0.92, hash12(floor(p / 5.0))) * clamp(gn * 1.4 - 0.2, 0.0, 1.0);
-	grass_c = mix(grass_c, grass_color * vec3(1.05, 0.82, 0.55), dirt * 0.55);
-	vec3 block_col = mix(walk_c, grass_c, grass);
+	vec3 walk_c = walk_color;
+	vec3 grass_c = grass_color;
+	vec3 road_c = road_color;
+	if (!simple_ground) {
+		// Sidewalk: tile joints every 1.6 m.
+		walk_c *= 1.0 - 0.10 * max(step(0.93, fract(b.x * 0.625)),
+			step(0.93, fract(b.y * 0.625)));
+		// Grass: patchiness with occasional dirt spots.
+		float gn = vnoise(p * 0.5);
+		grass_c *= 0.84 + 0.32 * gn;
+		float dirt = step(0.92, hash12(floor(p / 5.0))) * clamp(gn * 1.4 - 0.2, 0.0, 1.0);
+		grass_c = mix(grass_c, grass_color * vec3(1.05, 0.82, 0.55), dirt * 0.55);
 
-	// Asphalt: wear noise, sparse manholes and darker repair patches.
-	float wear = vnoise(p * 0.21);
-	vec3 road_c = road_color * (0.9 + 0.18 * wear);
-	vec2 cell = floor(p / 7.0);
-	float mh = hash12(cell + 3.7);
-	vec2 mo = (vec2(hash12(cell + 1.3), hash12(cell + 2.6)) - 0.5) * 4.6;
-	float md = length(mod(p, 7.0) - 3.5 + mo);
-	road_c = mix(road_c, road_c * 0.45, step(0.8, mh) * smoothstep(0.85, 0.6, md));
-	float patch = step(0.86, hash12(floor(p / 11.0) + 9.1));
-	road_c *= 1.0 + patch * (wear - 0.5) * 0.16;
+		// Asphalt: wear noise, sparse manholes and darker repair patches.
+		float wear = vnoise(p * 0.21);
+		road_c *= 0.9 + 0.18 * wear;
+		vec2 cell = floor(p / 7.0);
+		float mh = hash12(cell + 3.7);
+		vec2 mo = (vec2(hash12(cell + 1.3), hash12(cell + 2.6)) - 0.5) * 4.6;
+		float md = length(mod(p, 7.0) - 3.5 + mo);
+		road_c = mix(road_c, road_c * 0.45, step(0.8, mh) * smoothstep(0.85, 0.6, md));
+		float patch = step(0.86, hash12(floor(p / 11.0) + 9.1));
+		road_c *= 1.0 + patch * (wear - 0.5) * 0.16;
+	}
+	vec3 block_col = mix(walk_c, grass_c, grass);
 
 	// Zebra bars on the four approaches of every crossing.
 	float zeb = rx * (band(m.y, 0.5, 2.1, w.y) + band(m.y, road - 2.1, road - 0.5, w.y))
@@ -156,9 +162,12 @@ void fragment() {
 		// Soft shadow with radial cracks in the asphalt just outside the rim.
 		float edge = h.z + rim;
 		float sh = (1.0 - smoothstep(edge, edge + 0.8 + h.z * 0.25, d)) * (1.0 - t);
-		float cang = atan(p.y - h.y, p.x - h.x);
-		float cracks = smoothstep(0.65, 0.95, sin(cang * 7.0 + float(i) * 2.3))
-			* smoothstep(edge, edge + 0.35, d) * (1.0 - smoothstep(edge + 0.4, edge + 0.9, d));
+		float cracks = 0.0;
+		if (!simple_ground) {
+			float cang = atan(p.y - h.y, p.x - h.x);
+			cracks = smoothstep(0.65, 0.95, sin(cang * 7.0 + float(i) * 2.3))
+				* smoothstep(edge, edge + 0.35, d) * (1.0 - smoothstep(edge + 0.4, edge + 0.9, d));
+		}
 		col *= 1.0 - sh * (0.20 + 0.14 * cracks);
 	}
 	if (zone.z > 0.0) {

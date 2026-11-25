@@ -10,6 +10,7 @@ var in_menu := true
 var _body: VBoxContainer
 ## Last time the volume was written to the save file (see the slider below).
 var _volume_saved_at := 0
+var _volume_save_timer: Timer
 
 
 func _init(p_in_menu := true) -> void:
@@ -45,6 +46,14 @@ func _build() -> void:
 				GameState.set_language("uk" if dir > 0 else "en")
 				language_changed.emit()))
 
+	_volume_save_timer = Timer.new()
+	_volume_save_timer.wait_time = 0.5
+	_volume_save_timer.one_shot = true
+	_volume_save_timer.timeout.connect(func():
+		_volume_saved_at = Time.get_ticks_msec()
+		Save.set_setting("volume", GameState.volume))
+	add_child(_volume_save_timer)
+
 	var vol := HSlider.new()
 	vol.min_value = 0.0
 	vol.max_value = 1.0
@@ -52,15 +61,20 @@ func _build() -> void:
 	vol.value = GameState.volume
 	vol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vol.custom_minimum_size.y = 56
-	# Apply at once, but write the file at most twice a second: a drag fires this
-	# on every 0.05 step and every save is a synchronous write on the main thread.
+	# Apply at once, but write at most twice a second. The trailing timer keeps
+	# the last step made by keyboard or gamepad, which emits no drag_ended signal.
 	vol.value_changed.connect(func(v: float):
 		GameState.volume = v
 		GameState.apply_volume()
 		if Time.get_ticks_msec() - _volume_saved_at > 500:
+			_volume_save_timer.stop()
 			_volume_saved_at = Time.get_ticks_msec()
-			Save.set_setting("volume", v))
+			Save.set_setting("volume", v)
+		else:
+			_volume_save_timer.start())
 	vol.drag_ended.connect(func(_c: bool):
+		_volume_save_timer.stop()
+		_volume_saved_at = Time.get_ticks_msec()
 		Save.set_setting("volume", vol.value)
 		Sfx.play("ui"))
 	_row(tr("SOUND"), vol)

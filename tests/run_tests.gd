@@ -104,6 +104,12 @@ func _init() -> void:
 	_check(GraphicsQuality.KEYS.size() == 3, "three quality presets")
 	_check(GraphicsQuality.preset(0)["shadow"] < GraphicsQuality.preset(2)["shadow"], "low uses a smaller shadow atlas")
 	_check(GraphicsQuality.preset(0)["scale"] < GraphicsQuality.preset(2)["scale"], "low renders fewer pixels")
+	_check(not GraphicsQuality.preset(0)["shadows"] and GraphicsQuality.preset(2)["shadows"], "low skips dynamic shadows")
+	_check(GraphicsQuality.preset(0)["simple_ground"], "low skips procedural ground detail")
+	_check(GraphicsQuality.preset(0)["fps"] == 30 and GraphicsQuality.preset(2)["fps"] == 0, "low caps rendering at 30 FPS")
+	_check(GraphicsQuality.particle_count(0, 20) == 10, "low emits half the particles")
+	_check(GraphicsQuality.particle_count(2, 20) == 20, "high keeps every particle")
+	_check(GraphicsQuality.particle_count(0, 1) == 1, "a particle effect never gets a negative count")
 	_check(GraphicsQuality.name_key(9) == "QUALITY_HIGH", "an out-of-range level clamps")
 
 	print("Skins")

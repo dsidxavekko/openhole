@@ -94,12 +94,14 @@ var _shift_chain_max := 0
 func _ready() -> void:
 	mode = GameState.Mode.SOLO if attract else GameState.mode
 	time_left = GameState.match_time()
+	GameState.graphics_changed.connect(_apply_graphics)
 	_build_environment()
 	var blocks := _blocks()
 	var half := CityGen.map_extent(blocks) / 2.0
 	bound = half - 2.0
 	half_extent = half
 	_build_ground(half)
+	_apply_graphics()
 	demolition = Demolition.new()
 	demolition.game = self
 	add_child(demolition)
@@ -146,6 +148,14 @@ func _blocks() -> int:
 
 func _theme() -> int:
 	return GameState.map_theme if attract else GameState.match_theme()
+
+
+func _apply_graphics() -> void:
+	var p := GraphicsQuality.preset(GameState.graphics)
+	if is_instance_valid(sun):
+		sun.shadow_enabled = p["shadows"]
+	if ground_mat != null:
+		ground_mat.set_shader_parameter("simple_ground", p["simple_ground"])
 
 
 ## Dev helper: "-- --autoplay --screenshot=/path/shot.png" saves a frame after 8 s.
@@ -1027,7 +1037,7 @@ func _eat_burst(at: Vector3, color: Color, size: float) -> void:
 	_burst_next = (_burst_next + 1) % _bursts.size()
 	p.color = color.lightened(0.3)
 	p.global_position = at + Vector3(0, 0.3, 0)
-	p.amount = clampi(int(size * 6.0), 8, 18)
+	p.amount = GraphicsQuality.particle_count(GameState.graphics, clampi(int(size * 6.0), 8, 18))
 	p.restart()
 	p.emitting = true
 

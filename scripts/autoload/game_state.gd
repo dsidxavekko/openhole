@@ -1,6 +1,8 @@
 extends Node
 ## Match settings shared between the menu and the game scene, plus player options.
 
+signal graphics_changed
+
 enum Mode { CLASSIC, SOLO, BATTLE }
 enum MapTheme { CITY, SUBURB, NIGHT, MEXICO }
 enum Difficulty { EASY, NORMAL, HARD }
@@ -101,17 +103,18 @@ func set_option(key: String, save_key: String, value: Variant) -> void:
 		apply_graphics()
 
 
-## Applies the chosen quality preset to the live viewport and shadows.
+## Applies the chosen quality preset to rendering and notifies the live scene.
 func apply_graphics() -> void:
 	var p := GraphicsQuality.preset(graphics)
+	Engine.max_fps = int(p["fps"])
 	RenderingServer.directional_shadow_atlas_set_size(int(p["shadow"]), true)
 	RenderingServer.directional_soft_shadow_filter_set_quality(int(p["soft"]))
 	var tree := Engine.get_main_loop() as SceneTree
-	if tree == null or tree.root == null:
-		return
-	tree.root.msaa_3d = int(p["msaa"])
-	tree.root.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
-	tree.root.scaling_3d_scale = float(p["scale"])
+	if tree != null and tree.root != null:
+		tree.root.msaa_3d = int(p["msaa"])
+		tree.root.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+		tree.root.scaling_3d_scale = float(p["scale"])
+	graphics_changed.emit()
 
 
 func apply_volume() -> void:
