@@ -66,16 +66,17 @@ awards bronze, silver and gold.
 Buildings, buses, rocks and big trees break into chunks and collapse into the hole.
 A hole too small for a skyscraper can still bite chunks off it.
 
-## What's new in 0.6
-- A how-to-play sheet on the first launch and a `?` button in the menu.
-- A stats screen: matches, things eaten, Shift kills, records, a daily streak and 15 achievements.
-- Graphics quality presets for phones, a left-handed layout and a screen-flash toggle.
-- Solo counts the city by value and awards bronze, silver and gold medals.
-- Three rival bot personalities; the speed curve is flat at the top, so the biggest hole is no longer the fastest.
+## What's new in 0.7
+- The Low preset targets weaker phones: 30 FPS, no dynamic shadows, simpler ground and half as many particles.
+- Graphics quality changes apply immediately, including during a match; physics and game rules stay unchanged.
+- Sustained low FPS triggers a one-time suggestion to try Low, never an automatic switch.
+- Shift blasts no longer cut building meshes synchronously, and the final volume adjustment is saved reliably.
 
 ## Download
 Get the APK from [GitHub Releases](https://github.com/dsidxavekko/openhole/releases).
-It is debug-signed, so Android asks to allow installing from unknown sources.
+Releases since 0.6.0 use the same release key and can update in place. Versions
+0.5.5 and older were debug-signed: uninstall them first, which erases the local
+save. Android asks to allow installing from unknown sources.
 
 ## Build
 Requirements: Godot 4.7 (`~/.local/opt/godot/godot`), Android SDK build-tools,

@@ -1,0 +1,1 @@
+Low mode for weaker phones: 30 FPS, no dynamic shadows, simpler ground and fewer particles. Sustained low FPS suggests it once. Fixed a Shift blast hitch and saving the final volume adjustment.

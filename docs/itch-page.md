@@ -60,6 +60,11 @@ bigger hole appears close by and time slows down until you press the button.
 
 ## What's new since launch
 
+- **v0.7.0** — the Low graphics preset now targets weaker phones: 30 FPS,
+  no dynamic shadows, simpler ground and half as many particles. Changes apply
+  immediately in a match. If the frame rate stays low, the game suggests Low
+  once without switching automatically. A Shift blast no longer cuts building
+  meshes synchronously, and the final volume adjustment is saved reliably.
 - **v0.6.5** — a bug-fix pass: the kill feed could freeze a match in Battle and
   Classic, both map arrows in Settings walked forward, chunks of a building that
   fell beside the hole could stay hanging in the air, and a Shift that is worth
