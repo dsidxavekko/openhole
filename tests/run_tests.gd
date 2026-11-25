@@ -111,6 +111,22 @@ func _init() -> void:
 	_check(GraphicsQuality.particle_count(2, 20) == 20, "high keeps every particle")
 	_check(GraphicsQuality.particle_count(0, 1) == 1, "a particle effect never gets a negative count")
 	_check(GraphicsQuality.name_key(9) == "QUALITY_HIGH", "an out-of-range level clamps")
+	var fps_monitor := GraphicsQuality.LowFpsMonitor.new()
+	var early_hint := false
+	for i in 59:
+		early_hint = fps_monitor.add_frame(0.1) or early_hint
+	_check(not early_hint, "the low-FPS hint waits for six sustained seconds")
+	_check(fps_monitor.add_frame(0.1), "six seconds below 24 FPS trigger the hint")
+	_check(not fps_monitor.add_frame(0.1), "the low-FPS hint reports only once per match")
+	var recovered_monitor := GraphicsQuality.LowFpsMonitor.new()
+	for i in 20:
+		recovered_monitor.add_frame(0.1)
+	for i in 100:
+		recovered_monitor.add_frame(0.02)
+	var recovered_hint := false
+	for i in 40:
+		recovered_hint = recovered_monitor.add_frame(0.1) or recovered_hint
+	_check(not recovered_hint, "a healthy FPS window breaks the slow streak")
 
 	print("Skins")
 	_check(Skins.unlocked_with({}, 0) and Skins.unlocked_with({}, 1), "first skins are free")

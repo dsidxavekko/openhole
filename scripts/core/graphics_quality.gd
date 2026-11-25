@@ -27,3 +27,30 @@ static func name_key(level: int) -> String:
 
 static func particle_count(level: int, amount: int) -> int:
 	return maxi(1, roundi(amount * float(preset(level)["fx"])))
+
+
+class LowFpsMonitor extends RefCounted:
+	const FPS_LIMIT := 24.0
+	const WINDOW_SECONDS := 2.0
+	const SLOW_WINDOWS := 3
+
+	var _seconds := 0.0
+	var _frames := 0
+	var _slow_windows := 0
+	var _reported := false
+
+	func add_frame(delta: float) -> bool:
+		if _reported or delta <= 0.0:
+			return false
+		_seconds += delta
+		_frames += 1
+		if _seconds < WINDOW_SECONDS:
+			return false
+		var fps := _frames / _seconds
+		_seconds = 0.0
+		_frames = 0
+		_slow_windows = _slow_windows + 1 if fps < FPS_LIMIT else 0
+		if _slow_windows < SLOW_WINDOWS:
+			return false
+		_reported = true
+		return true

@@ -89,6 +89,7 @@ var _tut_target: Hole = null
 var _shift_chain := 0
 var _shift_chain_timer := 0.0
 var _shift_chain_max := 0
+var _low_fps_monitor := GraphicsQuality.LowFpsMonitor.new()
 
 
 func _ready() -> void:
@@ -542,6 +543,7 @@ func _process(delta: float) -> void:
 		_update_pointers()
 		hud.set_shift(player.shift_ready(), player.shift_cooldown, player.is_shifted(),
 			player.effects.get(Powerup.Kind.SHIFT, 0.0))
+		_performance_hint(delta)
 	_hud_timer -= delta
 	if _hud_timer <= 0.0 and running:
 		_hud_timer = 0.2
@@ -550,6 +552,15 @@ func _process(delta: float) -> void:
 
 func _add_shake(amount: float) -> void:
 	_shake = minf(_shake + amount, 1.0)
+
+
+func _performance_hint(delta: float) -> void:
+	if GameState.autoplay or GameState.graphics == GraphicsQuality.Level.LOW \
+			or Engine.time_scale != 1.0 or Save.get_setting("low_fps_hint_seen", false):
+		return
+	if _low_fps_monitor.add_frame(delta):
+		Save.set_setting("low_fps_hint_seen", true)
+		hud.notice(tr("LOW_FPS_HINT"), 6.0)
 
 
 ## Edge-of-screen arrows towards nearby holes outside the view:

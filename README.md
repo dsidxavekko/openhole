@@ -54,7 +54,9 @@ Skins for your hole unlock with records. Settings: sound, vibration, camera shak
 FPS counter, graphics quality, left-handed layout, screen flashes, bot skill and
 count, map theme (day city, warm suburb, night or sandy Mexico City) and seed.
 The Low preset is for weaker phones: 30 FPS, no dynamic shadows, simpler ground
-and half as many particles, while physics and game rules stay unchanged.
+and half as many particles, while physics and game rules stay unchanged. After
+six sustained seconds below 24 FPS, the game suggests this preset once; it never
+switches automatically.
 
 A how-to-play sheet opens on the first launch and from the `?` button. The stats
 screen keeps lifetime counters, per-mode records, a daily streak and 15 achievements.

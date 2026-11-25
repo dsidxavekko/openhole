@@ -145,5 +145,6 @@ QUALITY,Graphics,Графіка
 QUALITY_LOW,Low · 30 FPS,Низька · 30 FPS
 QUALITY_MEDIUM,Medium,Середня
 QUALITY_HIGH,High,Висока
+LOW_FPS_HINT,Low FPS? Try Pause → Settings → Graphics → Low.,Низький FPS? Спробуй «Пауза → Налаштування → Графіка → Низька».
 LEFT_HANDED,Left-handed layout,Під ліву руку
 FLASHES,Screen flashes,Спалахи екрана
