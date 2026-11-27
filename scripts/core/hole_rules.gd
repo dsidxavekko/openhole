@@ -149,3 +149,20 @@ static func shift_escape_reach(radius: float) -> float:
 ## must be too big to eat the usual way and reachable during the short Shift.
 static func can_shift_dive(me_r: float, target_r: float, dist: float) -> bool:
 	return target_r > me_r * EAT_HOLE_RATIO and dist < 9.0 + target_r * 1.5
+
+
+# --- Battle zone -------------------------------------------------------------
+
+## Margin kept inside the zone edge for bot targets and bonuses.
+const ZONE_MARGIN := 6.0
+const ZONE_MIN_LIMIT := 4.0
+
+
+## Farthest distance from the centre a bot should aim at while the zone is `zone_radius`.
+static func zone_limit(zone_radius: float) -> float:
+	return maxf(zone_radius - ZONE_MARGIN, ZONE_MIN_LIMIT)
+
+
+## Whether the ground point (x, z) is safely inside the zone.
+static func in_zone_limit(x: float, z: float, zone_radius: float) -> bool:
+	return Vector2(x, z).length() <= zone_limit(zone_radius)

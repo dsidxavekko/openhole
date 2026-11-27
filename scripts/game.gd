@@ -824,6 +824,15 @@ func _road_line(v: float) -> float:
 
 
 func _powerup_step(delta: float) -> void:
+	if mode == GameState.Mode.BATTLE:
+		# The zone shrinks: a bonus left outside it can never be picked up, so
+		# take it back and let it respawn inside.
+		for i in range(powerups.size() - 1, -1, -1):
+			var q := powerups[i]
+			if Vector2(q.position.x, q.position.z).length() > zone_radius - 2.0:
+				q.queue_free()
+				powerups.remove_at(i)
+				_powerup_timers.append(POWERUP_RESPAWN * 0.5)
 	for i in range(_powerup_timers.size() - 1, -1, -1):
 		_powerup_timers[i] -= delta
 		if _powerup_timers[i] <= 0.0:
@@ -1443,6 +1452,11 @@ func find_prey(me: Hole, reach: float) -> Hole:
 	return best
 
 
+## Bots must not chase food outside the shrinking Battle zone.
+func _food_in_play(p: Vector3) -> bool:
+	return mode != GameState.Mode.BATTLE or HoleRules.in_zone_limit(p.x, p.z, zone_radius)
+
+
 ## Position of the best-value food that fits (or that can be broken up and partly
 ## eaten), or null. `prefer_breakables` keeps bots from digging into buildings
 ## for single chunks when ordinary food is close by.
@@ -1452,7 +1466,7 @@ func find_food(me: Hole, reach: float, prefer_breakables := false) -> Variant:
 	var best_score := 0.0
 	for p in powerups:
 		var pd := Vector2(p.position.x - me.position.x, p.position.z - me.position.z).length()
-		if pd < reach and not me.has_effect(p.kind):
+		if pd < reach and not me.has_effect(p.kind) and _food_in_play(p.position):
 			var ps := 80.0 / (pd + 4.0) * (1.3 if p.kind == Powerup.Kind.SHIELD else 1.0)
 			if ps > best_score:
 				best_score = ps

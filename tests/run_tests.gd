@@ -479,5 +479,11 @@ func _init() -> void:
 				model_root.free()
 	_check(shifted_roots.is_empty(), "every model scene root is identity (%d bad)" % shifted_roots.size())
 
+	print("Battle zone limits")
+	_check(is_equal_approx(HoleRules.zone_limit(100.0), 94.0), "zone limit keeps a margin (94)")
+	_check(is_equal_approx(HoleRules.zone_limit(5.0), 4.0), "zone limit never drops below the minimum (4)")
+	_check(HoleRules.in_zone_limit(10.0, 10.0, 30.0), "a point inside the zone is in play")
+	_check(not HoleRules.in_zone_limit(30.0, 0.0, 30.0), "a point on the zone edge is out of play")
+
 	print("FAILED: %d" % _fails if _fails else "ALL PASSED")
 	quit(1 if _fails else 0)
