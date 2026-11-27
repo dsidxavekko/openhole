@@ -186,7 +186,7 @@ func _init() -> void:
 	print("Powerup")
 	var no_shield := true
 	for i in 300:
-		if Powerup.random_kind(false) == Powerup.Kind.SHIELD:
+		if Powerup.random_kind(false, true) == Powerup.Kind.SHIELD:
 			no_shield = false
 	_check(no_shield, "solo never spawns a shield")
 
@@ -215,7 +215,7 @@ func _init() -> void:
 	_check(Powerup.WEIGHTS.get(k, 0) == 0, "SHIFT has no spawn weight")
 	var never_shift := true
 	for i in 1000:
-		if Powerup.random_kind(true) == k:
+		if Powerup.random_kind(true, true) == k:
 			never_shift = false
 	_check(never_shift, "SHIFT is never spawned on the map")
 
@@ -526,6 +526,24 @@ func _init() -> void:
 	_check(is_equal_approx(JoystickPrefs.apply_gain(Vector2(0.9, 0), 2.4).length(), 1.0), "a high gain saturates at full speed")
 	_check(JoystickPrefs.apply_gain(Vector2(0.2, 0), 2.4).length() > JoystickPrefs.apply_gain(Vector2(0.2, 0), 1.2).length(), "a higher gain reacts sooner")
 	_check(JoystickPrefs.GAINS[JoystickPrefs.DEFAULT] == 1.6, "the default gain keeps the old feel (1.6)")
+
+	print("Instant power-ups")
+	_check(Powerup.is_instant(Powerup.Kind.TIME) and Powerup.is_instant(Powerup.Kind.FREEZE), "Time and Freeze are instant")
+	_check(not Powerup.is_instant(Powerup.Kind.MAGNET) and not Powerup.is_instant(Powerup.Kind.SHIFT), "timed bonuses are not instant")
+	_check(not Powerup.can_spawn(Powerup.Kind.FREEZE, false, true), "Freeze needs rivals (no Solo)")
+	_check(not Powerup.can_spawn(Powerup.Kind.TIME, true, false), "Battle has no extra time")
+	_check(not Powerup.can_spawn(Powerup.Kind.SHIELD, false, true), "the shield still needs rivals")
+	var spawned := {}
+	for i in 600:
+		spawned[Powerup.random_kind(false, true)] = true
+	_check(not spawned.has(Powerup.Kind.FREEZE) and not spawned.has(Powerup.Kind.SHIELD) and spawned.has(Powerup.Kind.TIME), "Solo draws time but never freeze or shield")
+	var battle_kinds := {}
+	for i in 600:
+		battle_kinds[Powerup.random_kind(true, false)] = true
+	_check(not battle_kinds.has(Powerup.Kind.TIME) and battle_kinds.has(Powerup.Kind.FREEZE), "Battle draws freeze but never time")
+	for kind in [Powerup.Kind.TIME, Powerup.Kind.FREEZE]:
+		_check(Powerup.COLORS.has(kind) and Powerup.NAMES.has(kind), "instant bonus %d has colour and name" % kind)
+	_check(not Powerup.WEIGHTS.has(Powerup.Kind.SHIFT), "Shift still never spawns")
 
 	print("FAILED: %d" % _fails if _fails else "ALL PASSED")
 	quit(1 if _fails else 0)

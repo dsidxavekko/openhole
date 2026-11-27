@@ -167,3 +167,6 @@ JOY_SENS,Joystick sensitivity,Чутливість джойстика
 JOY_SMALL,Small,Малий
 JOY_NORMAL,Normal,Звичайний
 JOY_LARGE,Large,Великий
+PU_TIME,Time,Час
+PU_FREEZE,Freeze,Заморозка
+PU_TIME_GAIN,+%d s!,+%d с!

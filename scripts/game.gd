@@ -89,6 +89,7 @@ var _tut_target: Hole = null
 var _shift_chain := 0
 var _shift_chain_timer := 0.0
 var _shift_chain_max := 0
+var _time_bonus := 0.0
 var _ring_mesh: TorusMesh
 var _ground_pos := PackedVector4Array()
 var _ground_cols := PackedVector4Array()
@@ -809,7 +810,7 @@ func _traffic_step(delta: float) -> void:
 
 func _spawn_powerup() -> void:
 	var p := Powerup.new()
-	p.kind = Powerup.random_kind(mode != GameState.Mode.SOLO)
+	p.kind = Powerup.random_kind(mode != GameState.Mode.SOLO, mode != GameState.Mode.BATTLE and not attract)
 	world.add_child(p)
 	if mode == GameState.Mode.BATTLE:
 		# The zone gets tiny: spawn inside it, or nobody can ever reach it.
@@ -854,16 +855,34 @@ func _powerup_step(delta: float) -> void:
 		for h in holes:
 			if not h.alive or h.is_shifted():
 				continue
+			# Time and Freeze are the player's: bots leave them lying there.
+			if Powerup.is_instant(p.kind) and not _me(h):
+				continue
 			if Vector2(h.position.x - p.position.x, h.position.z - p.position.z).length() < h.radius + 1.0:
-				h.give_effect(p.kind, Powerup.DURATIONS[p.kind])
+				if Powerup.is_instant(p.kind):
+					_apply_instant(p.kind)
+				else:
+					h.give_effect(p.kind, Powerup.DURATIONS[p.kind])
 				if _me(h):
-					hud.notice(tr(Powerup.NAMES[p.kind]) + "!", 1.5)
+					hud.notice(tr("PU_TIME_GAIN") % int(Powerup.TIME_BONUS) if p.kind == Powerup.Kind.TIME \
+						else tr(Powerup.NAMES[p.kind]) + "!", 1.5)
 					GameState.vibrate(40)
 					Sfx.play("powerup")
 				p.queue_free()
 				powerups.remove_at(i)
 				_powerup_timers.append(DailyMods.powerup_respawn(POWERUP_RESPAWN, GameState.daily_mod()))
 				break
+
+
+## Time adds seconds to the clock; Freeze stops every bot for a moment.
+func _apply_instant(kind: int) -> void:
+	if kind == Powerup.Kind.TIME:
+		time_left += Powerup.TIME_BONUS
+		_time_bonus += Powerup.TIME_BONUS
+		return
+	for o in holes:
+		if o != player and o.alive and o.controller is BotAI:
+			(o.controller as BotAI).freeze(Powerup.FREEZE_SECONDS)
 
 
 func _start_fall(e: Edible, h: Hole) -> void:
@@ -1479,7 +1498,7 @@ func find_food(me: Hole, reach: float, prefer_breakables := false) -> Variant:
 	var best_score := 0.0
 	for p in powerups:
 		var pd := Vector2(p.position.x - me.position.x, p.position.z - me.position.z).length()
-		if pd < reach and not me.has_effect(p.kind) and _food_in_play(p.position):
+		if pd < reach and not Powerup.is_instant(p.kind) and not me.has_effect(p.kind) and _food_in_play(p.position):
 			var ps := 80.0 / (pd + 4.0) * (1.3 if p.kind == Powerup.Kind.SHIELD else 1.0)
 			if ps > best_score:
 				best_score = ps
@@ -1687,7 +1706,7 @@ func _finish() -> void:
 		Save.add_counter("total_eaten", eaten_count)
 		Save.add_counter("matches")
 		Save.add_counter("matches_" + GameState.mode_key())
-		Save.add_counter("time_played", maxi(1, int(round(GameState.match_time() - time_left))))
+		Save.add_counter("time_played", maxi(1, int(round(GameState.match_time() + _time_bonus - time_left))))
 		if player.holes_eaten_shifted > 0:
 			Save.add_counter("shift_kills", player.holes_eaten_shifted)
 		var before := Skins.unlocked_set(stats_before)
