@@ -485,5 +485,24 @@ func _init() -> void:
 	_check(HoleRules.in_zone_limit(10.0, 10.0, 30.0), "a point inside the zone is in play")
 	_check(not HoleRules.in_zone_limit(30.0, 0.0, 30.0), "a point on the zone edge is out of play")
 
+	print("Daily twists")
+	var seen := {}
+	for d in 60:
+		var kind := DailyMods.for_seed(20261101 + d)
+		seen[kind] = true
+		if d < 2:
+			_check(kind >= 0 and kind < DailyMods.COUNT, "twist %d for day %d is a valid kind" % [kind, d])
+			_check(kind == DailyMods.for_seed(20261101 + d), "the twist is stable for a date")
+	_check(seen.size() >= 4, "two months of dailies show at least four different twists (%d)" % seen.size())
+	_check(is_equal_approx(DailyMods.match_time(120.0, DailyMods.Kind.SPRINT), 90.0), "sprint shortens the match")
+	_check(is_equal_approx(DailyMods.match_time(120.0, DailyMods.Kind.NONE), 120.0), "no twist keeps the time")
+	_check(DailyMods.powerup_count(6, DailyMods.Kind.NO_POWERUPS) == 0, "no-power-ups days spawn none")
+	_check(DailyMods.powerup_count(6, DailyMods.Kind.POWER_RAIN) > 6, "power rain spawns more bonuses")
+	_check(DailyMods.start_level(DailyMods.Kind.HEAD_START) > 1, "head start begins above level 1")
+	_check(not DailyMods.counts_for_solo(DailyMods.Kind.HEAD_START), "easier twists skip the shared Solo record")
+	_check(DailyMods.counts_for_solo(DailyMods.Kind.SPRINT), "harder twists count for the Solo record")
+	for kind in DailyMods.COUNT:
+		_check(DailyMods.NAMES.has(kind) and DailyMods.DESCS.has(kind), "twist %d has name and description keys" % kind)
+
 	print("FAILED: %d" % _fails if _fails else "ALL PASSED")
 	quit(1 if _fails else 0)

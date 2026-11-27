@@ -212,8 +212,9 @@ func _fill_cards() -> void:
 	var streak: int = GameState.daily_streak()
 	if streak > 1:
 		daily_right += "  ·  " + tr("STREAK") % streak
+	var daily_mod := DailyMods.for_seed(GameState.daily_seed())
 	var specs := [
-		{"title": tr("DAILY"), "desc": tr("DESC_DAILY"), "color": UiTheme.CARD_DAILY, "icon": "daily",
+		{"title": tr("DAILY"), "desc": tr("DESC_DAILY") + " · " + tr(DailyMods.NAMES[daily_mod]), "color": UiTheme.CARD_DAILY, "icon": "daily",
 			"right": daily_right,
 			"go": _start.bind(GameState.Mode.SOLO, true)},
 		{"title": tr("MODE_CLASSIC"), "desc": tr("DESC_CLASSIC") % GameState.bot_count, "color": UiTheme.CARD_CLASSIC,

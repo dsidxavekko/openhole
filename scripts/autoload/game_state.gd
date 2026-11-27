@@ -169,8 +169,13 @@ func daily_streak() -> int:
 	return int(Save.get_setting("daily_streak", 0))
 
 
+## Today's Daily twist, or NONE outside the Daily.
+func daily_mod() -> int:
+	return DailyMods.for_seed(daily_seed()) if daily and mode == Mode.SOLO else DailyMods.Kind.NONE
+
+
 func match_time() -> float:
-	return 150.0 if mode == Mode.BATTLE else 120.0
+	return DailyMods.match_time(150.0 if mode == Mode.BATTLE else 120.0, daily_mod())
 
 
 func city_blocks() -> int:

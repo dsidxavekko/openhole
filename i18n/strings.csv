@@ -148,3 +148,14 @@ QUALITY_HIGH,High,Висока
 LOW_FPS_HINT,Low FPS? Try Pause → Settings → Graphics → Low.,Низький FPS? Спробуй «Пауза → Налаштування → Графіка → Низька».
 LEFT_HANDED,Left-handed layout,Під ліву руку
 FLASHES,Screen flashes,Спалахи екрана
+MOD_NONE,Classic day,Звичайний день
+MOD_NONE_DESC,No twist today,Сьогодні без змін
+MOD_SPRINT,Sprint,Спринт
+MOD_SPRINT_DESC,Only 90 seconds,Лише 90 секунд
+MOD_NO_POWERUPS,No power-ups,Без бонусів
+MOD_NO_POWERUPS_DESC,Eat with your own strength,Тільки власні сили
+MOD_POWER_RAIN,Power rain,Дощ бонусів
+MOD_POWER_RAIN_DESC,Bonuses everywhere,Бонуси всюди
+MOD_HEAD_START,Head start,Гарний старт
+MOD_HEAD_START_DESC,You start at level 4,Старт одразу з 4 рівня
+DAILY_TWIST,Twist: %s,Особливість: %s

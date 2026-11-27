@@ -116,7 +116,8 @@ func _ready() -> void:
 	if mode == GameState.Mode.BATTLE:
 		zone_start = half * 1.45
 		zone_radius = zone_start
-	for i in (2 if attract else POWERUP_COUNT):
+	var mod := DailyMods.Kind.NONE if attract else GameState.daily_mod()
+	for i in (2 if attract else DailyMods.powerup_count(POWERUP_COUNT, mod)):
 		_spawn_powerup()
 	_make_popups()
 	running = true
@@ -124,6 +125,9 @@ func _ready() -> void:
 		return
 
 	_make_bursts()
+	if mod == DailyMods.Kind.HEAD_START:
+		player.set_points(HoleRules.points_for_level(DailyMods.start_level(mod)))
+		player.snap_radius()
 	hud = Hud.new()
 	add_child(hud)
 	hud.play_again.connect(func():
@@ -135,6 +139,8 @@ func _ready() -> void:
 	hud.shift_pressed.connect(_player_shift)
 	hud.pause_pressed.connect(pause)
 	_update_hud()
+	if mod != DailyMods.Kind.NONE:
+		hud.notice(tr(DailyMods.NAMES[mod]) + ": " + tr(DailyMods.DESCS[mod]), 4.0)
 	# `--tutorial` forces the lesson (dev/smoke) even if it was already seen.
 	var force_lesson := OS.get_cmdline_user_args().has("--tutorial")
 	if force_lesson or (not GameState.autoplay and not Save.get_setting("shift_hint_done", false)):
@@ -856,7 +862,7 @@ func _powerup_step(delta: float) -> void:
 					Sfx.play("powerup")
 				p.queue_free()
 				powerups.remove_at(i)
-				_powerup_timers.append(POWERUP_RESPAWN)
+				_powerup_timers.append(DailyMods.powerup_respawn(POWERUP_RESPAWN, GameState.daily_mod()))
 				break
 
 
@@ -1630,13 +1636,16 @@ func _finish() -> void:
 			if GameState.daily:
 				title = tr("DAILY_DONE")
 			lines.append(tr("CITY_EATEN") % pct)
+			if GameState.daily_mod() != DailyMods.Kind.NONE:
+				lines.append(tr("DAILY_TWIST") % tr(DailyMods.NAMES[GameState.daily_mod()]))
 			lines.append(SoloGoals.progress_line(pct))
 			lines.append(tr("POINTS") % player.points)
 			_append_shift_stats(lines)
 			if save:
 				record = Save.submit_record(key, pct)
 				if GameState.daily:
-					Save.submit_record("solo", pct)
+					if DailyMods.counts_for_solo(GameState.daily_mod()):
+						Save.submit_record("solo", pct)
 					var today := GameState.daily_seed()
 					var last := int(Save.get_setting("daily_last", 0))
 					if last != today:
