@@ -89,11 +89,16 @@ var _tut_target: Hole = null
 var _shift_chain := 0
 var _shift_chain_timer := 0.0
 var _shift_chain_max := 0
+var _ring_mesh: TorusMesh
+var _ground_pos := PackedVector4Array()
+var _ground_cols := PackedVector4Array()
 var _low_fps_monitor := GraphicsQuality.LowFpsMonitor.new()
 
 
 func _ready() -> void:
 	mode = GameState.Mode.SOLO if attract else GameState.mode
+	_ground_pos.resize(MAX_HOLES)
+	_ground_cols.resize(MAX_HOLES)
 	time_left = GameState.match_time()
 	GameState.graphics_changed.connect(_apply_graphics)
 	_build_environment()
@@ -1263,11 +1268,13 @@ func _shift_wave(h: Hole) -> void:
 
 
 func _ring(at: Vector3, r0: float, r1: float, color: Color) -> void:
-	var torus := TorusMesh.new()
-	torus.inner_radius = 0.9
-	torus.outer_radius = 1.0
-	torus.rings = 48
-	torus.ring_segments = 4
+	if _ring_mesh == null:
+		_ring_mesh = TorusMesh.new()
+		_ring_mesh.inner_radius = 0.9
+		_ring_mesh.outer_radius = 1.0
+		_ring_mesh.rings = 48
+		_ring_mesh.ring_segments = 4
+	var torus := _ring_mesh
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -1498,19 +1505,21 @@ func find_food(me: Hole, reach: float, prefer_breakables := false) -> Variant:
 # --- Rendering / HUD -------------------------------------------------------
 
 func _update_ground() -> void:
-	var pos := PackedVector4Array()
-	var cols := PackedVector4Array()
+	# Reused arrays: this runs every physics tick and must not allocate.
+	var n := 0
 	for h in holes:
-		if not h.alive or pos.size() >= MAX_HOLES:
+		if not h.alive or n >= MAX_HOLES:
 			continue
-		pos.append(Vector4(h.position.x, h.position.z, h.radius, 0))
+		_ground_pos[n] = Vector4(h.position.x, h.position.z, h.radius, 0)
 		var c := (Powerup.COLORS[Powerup.Kind.SHIFT] as Color if h.is_shifted() else h.color).srgb_to_linear()
-		cols.append(Vector4(c.r, c.g, c.b, h.pattern))
-	pos.resize(MAX_HOLES)
-	cols.resize(MAX_HOLES)
-	ground_mat.set_shader_parameter("holes", pos)
-	ground_mat.set_shader_parameter("hole_colors", cols)
-	ground_mat.set_shader_parameter("hole_count", _alive_count())
+		_ground_cols[n] = Vector4(c.r, c.g, c.b, h.pattern)
+		n += 1
+	for i in range(n, MAX_HOLES):
+		_ground_pos[i] = Vector4.ZERO
+		_ground_cols[i] = Vector4.ZERO
+	ground_mat.set_shader_parameter("holes", _ground_pos)
+	ground_mat.set_shader_parameter("hole_colors", _ground_cols)
+	ground_mat.set_shader_parameter("hole_count", n)
 	if mode == GameState.Mode.BATTLE:
 		ground_mat.set_shader_parameter("zone", Vector3(0, 0, zone_radius))
 
