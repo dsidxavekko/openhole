@@ -171,3 +171,12 @@ PU_TIME,Time,Час
 PU_FREEZE,Freeze,Заморозка
 PU_TIME_GAIN,+%d s!,+%d с!
 THEME_WINTER,Winter,Зима
+MISSIONS_TODAY,Today's missions,Місії на сьогодні
+MISSION_EAT,Eat %d things in one match,З'їсти %d предметів за матч
+MISSION_COMBO,Reach a x%d streak,Набрати серію з %d предметів
+MISSION_SHIFT_KILLS,Swallow %d holes in Shift,Проковтнути %d дір на Зсуві
+MISSION_POWERUPS,Take %d power-ups,Підібрати %d бонусів
+MISSION_POINTS,Score %d points,Набрати %d очок
+MISSION_SHIFTS,Use Shift %d times,Використати Зсув %d раз
+MISSION_DONE,Mission done: %s,Місію виконано: %s
+STATS_MISSIONS,Missions done: %d,Виконано місій: %d

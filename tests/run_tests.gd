@@ -551,5 +551,29 @@ func _init() -> void:
 		_check(Powerup.COLORS.has(kind) and Powerup.NAMES.has(kind), "instant bonus %d has colour and name" % kind)
 	_check(not Powerup.WEIGHTS.has(Powerup.Kind.SHIFT), "Shift still never spawns")
 
+	print("Daily missions")
+	var ms := DailyMissions.for_seed(20261127)
+	_check(ms.size() == DailyMissions.PER_DAY, "a day has %d missions" % DailyMissions.PER_DAY)
+	_check(DailyMissions.for_seed(20261127) == ms, "the missions are stable for a date")
+	var kinds_today := {}
+	for m in ms:
+		kinds_today[m.kind] = true
+	_check(kinds_today.size() == DailyMissions.PER_DAY, "the missions of a day are distinct kinds")
+	var all_kinds := {}
+	for d in 40:
+		for m in DailyMissions.for_seed(20261101 + d):
+			all_kinds[m.kind] = true
+			_check(m.need > 0, "a mission target is positive") if d == 0 else null
+	_check(all_kinds.size() >= 5, "a month of days uses most mission kinds (%d)" % all_kinds.size())
+	var big := {"eaten": 99999, "combo": 99, "shift_kills": 99, "powerups": 99, "points": 999999, "shifts": 99}
+	_check(DailyMissions.met_mask(ms, big) == 7, "huge stats meet every mission")
+	_check(DailyMissions.met_mask(ms, {}) == 0, "empty stats meet nothing")
+	var part := {ms[1].stat: ms[1].need}
+	_check(DailyMissions.met_mask(ms, part) == 2, "exactly the target meets the mission (bit 1)")
+	_check(DailyMissions.newly_done(2, 7) == 5, "newly done leaves out earlier bits")
+	_check(DailyMissions.count_bits(5) == 2 and DailyMissions.is_done(5, 2) and not DailyMissions.is_done(5, 1), "bit helpers agree")
+	for kind in DailyMissions.KINDS:
+		_check(kind.has("stat") and kind.has("text") and int(kind.base) > 0 and int(kind.step) > 0, "mission kind %s is complete" % kind.stat)
+
 	print("FAILED: %d" % _fails if _fails else "ALL PASSED")
 	quit(1 if _fails else 0)

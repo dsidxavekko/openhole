@@ -18,6 +18,7 @@ func _ready() -> void:
 	_row(box, tr("STATS_BEST_CLASSIC") % int(Save.get_record("classic")))
 	_row(box, tr("STATS_BEST_SOLO") % Save.get_record("solo"))
 	_row(box, tr("STATS_STREAK") % GameState.daily_streak())
+	_row(box, tr("STATS_MISSIONS") % int(Save.get_record("missions_done")))
 	var played := int(Save.get_record("time_played"))
 	_row(box, tr("STATS_TIME") % [played / 3600, (played % 3600) / 60])
 
@@ -25,6 +26,20 @@ func _ready() -> void:
 	line.color = Color(1, 1, 1, 0.1)
 	line.custom_minimum_size.y = 2
 	add_child(line)
+	add_child(UiTheme.label(tr("MISSIONS_TODAY"), 32, HORIZONTAL_ALIGNMENT_CENTER, 800))
+	var missions := DailyMissions.for_seed(GameState.daily_seed())
+	var done := GameState.missions_mask()
+	for i in missions.size():
+		var ok := DailyMissions.is_done(done, i)
+		var m := UiTheme.label(("✓  " if ok else "•  ") + tr(missions[i].text) % missions[i].need, 24,
+			HORIZONTAL_ALIGNMENT_LEFT, 600 if ok else 500)
+		m.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		m.modulate = Color.WHITE if ok else Color(1, 1, 1, 0.6)
+		add_child(m)
+	var line2 := ColorRect.new()
+	line2.color = Color(1, 1, 1, 0.1)
+	line2.custom_minimum_size.y = 2
+	add_child(line2)
 	add_child(UiTheme.label(tr("STATS_ACHIEVEMENTS"), 32, HORIZONTAL_ALIGNMENT_CENTER, 800))
 
 	var stats := Achievements.current_stats()

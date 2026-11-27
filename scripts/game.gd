@@ -1723,6 +1723,20 @@ func _finish() -> void:
 		Save.add_counter("time_played", maxi(1, int(round(GameState.match_time() + _time_bonus - time_left))))
 		if player.holes_eaten_shifted > 0:
 			Save.add_counter("shift_kills", player.holes_eaten_shifted)
+		var missions := DailyMissions.for_seed(GameState.daily_seed())
+		var done_before := GameState.missions_mask()
+		var match_stats := {"eaten": eaten_count, "combo": player.best_combo,
+			"shift_kills": player.holes_eaten_shifted, "powerups": player.powerups_taken,
+			"points": player.points, "shifts": player.shifts_used}
+		var done_now := done_before | DailyMissions.met_mask(missions, match_stats)
+		var fresh := DailyMissions.newly_done(done_before, done_now)
+		if fresh != 0:
+			Save.set_setting("missions_day", GameState.daily_seed())
+			Save.set_setting("missions_mask", done_now)
+			for i in missions.size():
+				if DailyMissions.is_done(fresh, i):
+					Save.add_counter("missions_done")
+					lines.append(tr("MISSION_DONE") % (tr(missions[i].text) % missions[i].need))
 		var before := Skins.unlocked_set(stats_before)
 		for i in Skins.unlocked_set(Skins.current_stats()):
 			if not before.has(i):

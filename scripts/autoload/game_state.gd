@@ -178,6 +178,13 @@ func daily_mod() -> int:
 	return DailyMods.for_seed(daily_seed()) if daily and mode == Mode.SOLO else DailyMods.Kind.NONE
 
 
+## Bitmask of today's finished missions (0 on a new day).
+func missions_mask() -> int:
+	if int(Save.get_setting("missions_day", 0)) != daily_seed():
+		return 0
+	return int(Save.get_setting("missions_mask", 0))
+
+
 func match_time() -> float:
 	return DailyMods.match_time(150.0 if mode == Mode.BATTLE else 120.0, daily_mod())
 
