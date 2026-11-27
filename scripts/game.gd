@@ -607,7 +607,7 @@ func _update_pointers() -> void:
 		var tx := (inner.size.x / 2.0) / maxf(absf(dir.x), 0.001)
 		var ty := (inner.size.y / 2.0) / maxf(absf(dir.y), 0.001)
 		var p := center + dir * minf(tx, ty)
-		found.append({"p": p, "a": dir.angle(), "c": c, "d": dist})
+		found.append({"p": p, "a": dir.angle(), "c": c, "d": dist, "t": c == Color("ff4d6d")})
 	found.sort_custom(func(a, b): return a.d < b.d)
 	hud.set_pointers(found.slice(0, 4))
 

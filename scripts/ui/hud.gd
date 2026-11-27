@@ -573,11 +573,20 @@ class PointerLayer extends Control:
 			var p: Vector2 = ptr.p - global_position
 			var a: float = ptr.a
 			var c: Color = ptr.c
-			var tip := p + Vector2.from_angle(a) * 22.0
-			var l := p + Vector2.from_angle(a + 2.4) * 18.0
-			var r := p + Vector2.from_angle(a - 2.4) * 18.0
+			# Danger and prey differ by shape too, not only by colour: a big solid
+			# arrow with a white dot warns, a small hollow one marks prey.
+			var threat: bool = ptr.get("t", false)
+			var k := 1.25 if threat else 0.9
+			var tip := p + Vector2.from_angle(a) * 22.0 * k
+			var l := p + Vector2.from_angle(a + 2.4) * 18.0 * k
+			var r := p + Vector2.from_angle(a - 2.4) * 18.0 * k
 			draw_colored_polygon(PackedVector2Array([tip, l, r]), c)
 			draw_polyline(PackedVector2Array([tip, l, r, tip]), Color(0, 0, 0, 0.6), 3.0, true)
+			var mid := (tip + l + r) / 3.0
+			if threat:
+				draw_circle(mid, 4.0 * k, Color.WHITE)
+			else:
+				draw_circle(mid, 4.0, Color(0, 0, 0, 0.55))
 
 
 ## Label plus an arrow pointing down at the SHIFT button; gently pulses.
