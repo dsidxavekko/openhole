@@ -1652,7 +1652,8 @@ func _finish() -> void:
 					if h != player and h.alive and h.points > player.points:
 						place += 1
 			else:
-				place = _alive_count() + 1
+				# An eliminated player never wins, even if the last rival fell in the same tick.
+				place = maxi(_alive_count() + 1, 2)
 			title = tr("YOU_WIN") if place == 1 else tr("PLACE") % place
 			lines.append(tr("POINTS") % player.points)
 			_append_shift_stats(lines)
