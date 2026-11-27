@@ -321,6 +321,12 @@ func _init() -> void:
 			_check(false, "mexico palette has %s" % key)
 	_check(not pal_mexico.has("house"), "mexico palette has no house colours")
 
+	print("Winter theme")
+	var pal_winter := ThemePalettes.for_theme(4)
+	_check(pal_winter != pal_city, "winter has its own palette")
+	_check(pal_winter.building.size() >= 4 and pal_winter.car.size() >= 4, "winter palette has building and car colours")
+	_check(pal_winter.car_tint != Color.WHITE and pal_winter.prop_tint != Color.WHITE, "winter washes models cool")
+
 	print("ModelLibrary")
 	var lib := ModelLibrary.new()
 	var stock_car: Dictionary = lib.pick("car", Vector3(3, 0, 7))

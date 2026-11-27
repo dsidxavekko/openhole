@@ -4,11 +4,11 @@ extends Node
 signal graphics_changed
 
 enum Mode { CLASSIC, SOLO, BATTLE }
-enum MapTheme { CITY, SUBURB, NIGHT, MEXICO }
+enum MapTheme { CITY, SUBURB, NIGHT, MEXICO, WINTER }
 enum Difficulty { EASY, NORMAL, HARD }
 
 ## tr() keys per MapTheme value, in order.
-const THEME_KEYS := ["THEME_CITY", "THEME_SUBURB", "THEME_NIGHT", "THEME_MEXICO"]
+const THEME_KEYS := ["THEME_CITY", "THEME_SUBURB", "THEME_NIGHT", "THEME_MEXICO", "THEME_WINTER"]
 
 const MODE_KEYS := ["classic", "solo", "battle"]
 const DIFFICULTY_KEYS := ["DIFF_EASY", "DIFF_NORMAL", "DIFF_HARD"]
@@ -59,10 +59,10 @@ func _ready() -> void:
 			lang = arg.trim_prefix("--lang=")
 	TranslationServer.set_locale(lang)
 	map_theme = clampi(Save.get_setting("theme", MapTheme.CITY), 0, THEME_KEYS.size() - 1)
-	# Dev helper for screenshots: "-- --theme=city|suburb|night|mexico" overrides the theme without saving.
+	# Dev helper for screenshots: "-- --theme=city|suburb|night|mexico|winter" overrides the theme without saving.
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--theme="):
-			map_theme = clampi(["city", "suburb", "night", "mexico"].find(arg.trim_prefix("--theme=").to_lower()), 0, THEME_KEYS.size() - 1)
+			map_theme = clampi(["city", "suburb", "night", "mexico", "winter"].find(arg.trim_prefix("--theme=").to_lower()), 0, THEME_KEYS.size() - 1)
 	bot_count = clampi(Save.get_setting("bots", 7), MIN_BOTS, MAX_BOTS)
 	difficulty = clampi(Save.get_setting("difficulty", Difficulty.NORMAL), 0, 2)
 	vibration = Save.get_setting("vibration", true)

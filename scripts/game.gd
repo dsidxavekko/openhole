@@ -271,6 +271,13 @@ func _build_environment() -> void:
 		sun.light_color = Color("ffd79a")
 		sun.light_energy = 1.15
 		sun.rotation_degrees = Vector3(-48, -28, 0)
+	elif _theme() == GameState.MapTheme.WINTER:
+		# Pale blue overcast: cool sky, cool bounce, a slightly weaker sun.
+		env.background_color = Color("cfdfee")
+		env.ambient_light_color = Color(0.82, 0.9, 1.0)
+		env.ambient_light_energy = 0.6
+		sun.light_color = Color(0.92, 0.96, 1.0)
+		sun.light_energy = 0.95
 
 	camera = Camera3D.new()
 	camera.fov = 50.0
@@ -323,6 +330,13 @@ func _build_ground(half: float) -> void:
 		ground_mat.set_shader_parameter("road_color", Color("8b8073"))
 		ground_mat.set_shader_parameter("line_color", Color("f0e2c4"))
 		ground_mat.set_shader_parameter("outside_color", Color("c9ad7e"))
+	elif _theme() == GameState.MapTheme.WINTER:
+		# Snow on the lawns and kerbs, wet dark asphalt.
+		ground_mat.set_shader_parameter("grass_color", Color("e6edf5"))
+		ground_mat.set_shader_parameter("walk_color", Color("c9d3df"))
+		ground_mat.set_shader_parameter("road_color", Color("5d6571"))
+		ground_mat.set_shader_parameter("line_color", Color("e9edf2"))
+		ground_mat.set_shader_parameter("outside_color", Color("d9e2ec"))
 	var mi := MeshInstance3D.new()
 	mi.mesh = plane
 	mi.material_override = ground_mat
@@ -333,8 +347,8 @@ func _spawn_city(seed_value: int, blocks: int) -> void:
 	var factory := EdibleFactory.new()
 	factory.night = _theme() == GameState.MapTheme.NIGHT
 	factory.set_theme(_theme())
-	# Night keeps the dense city layout (tall buildings = lit facades).
-	var layout_theme := 0 if _theme() == GameState.MapTheme.NIGHT else _theme()
+	# Night and Winter keep the dense city layout; they only recolour it.
+	var layout_theme := 0 if _theme() in [GameState.MapTheme.NIGHT, GameState.MapTheme.WINTER] else _theme()
 	for spec in CityGen.generate(seed_value, blocks, layout_theme):
 		var e := factory.build(spec)
 		if _overlaps_existing(e):

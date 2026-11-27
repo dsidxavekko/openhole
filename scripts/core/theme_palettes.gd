@@ -27,6 +27,12 @@ const BUILDING_MEXICO := [Color("f2c193"), Color("e8a97d"), Color("f0d6b0"), Col
 const CAR_MEXICO := [Color("c25b3a"), Color("d9a45b"), Color("8a9a6b"), Color("e8d5b0"),
 	Color("5d4a3a"), Color("b8b0a0"), Color("a34a2e"), Color("e0c9a0")]
 
+## Winter: frosted pastels, a cool wash on everything.
+const BUILDING_WINTER := [Color("c5d3e0"), Color("a9b8c9"), Color("e4ebf2"), Color("8fa3b8"),
+	Color("d6dde6"), Color("b7c4d1")]
+const CAR_WINTER := [Color("c1121f"), Color("e9ecef"), Color("2b4a6f"), Color("adb5bd"),
+	Color("1d3557"), Color("f1faee"), Color("495057"), Color("e76f51")]
+
 const CITY := {
 	"building": BUILDING_CITY,
 	"house": HOUSE_STOCK,
@@ -54,6 +60,18 @@ const MEXICO := {
 	"trash": Color("3a5a40"),
 	"mailbox": Color("b3541e"),
 }
+const WINTER := {
+	"building": BUILDING_WINTER,
+	"house": HOUSE_STOCK,
+	"car": CAR_WINTER,
+	"shirt": SHIRT_CITY,
+	"car_tint": Color(0.9, 0.95, 1.0),
+	"person_tint": Color(0.92, 0.96, 1.0),
+	"prop_tint": Color(0.93, 0.96, 1.0),
+	"hydrant": Color("d62828"),
+	"trash": Color("3a5a40"),
+	"mailbox": Color("1d4ed8"),
+}
 
 
 ## `theme` is a GameState.MapTheme value (kept as int so core stays autoload-free).
@@ -62,6 +80,7 @@ static func for_theme(theme: int) -> Dictionary:
 		1: return SUBURB
 		2: return NIGHT
 		3: return MEXICO
+		4: return WINTER
 		_: return CITY
 
 
