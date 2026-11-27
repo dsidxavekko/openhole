@@ -71,6 +71,14 @@ awards bronze, silver and gold.
 Buildings, buses, rocks and big trees break into chunks and collapse into the hole.
 A hole too small for a skyscraper can still bite chunks off it.
 
+## What's new in 0.8
+- Daily twists (Sprint, No power-ups, Power rain, Head start) and three daily missions.
+- A copyable result code on the results screen.
+- Instant Time (+10 s) and Freeze power-ups, and a Winter map theme.
+- Joystick size and sensitivity settings.
+- Battle fixes: bonuses and bots stay inside the shrinking zone, no false win when eliminated.
+- Saving is batched and atomic, and an unreadable save is kept as a backup.
+
 ## What's new in 0.7
 - The Low preset targets weaker phones: 30 FPS, no dynamic shadows, simpler ground and half as many particles.
 - Graphics quality changes apply immediately, including during a match; physics and game rules stay unchanged.

@@ -1,0 +1,1 @@
+Daily twists and three daily missions, a copyable result code, Time and Freeze power-ups, a Winter map and joystick size settings. Fixed Battle bonuses outside the zone, a false win when eliminated, and safer saving.

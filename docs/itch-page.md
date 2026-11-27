@@ -60,6 +60,11 @@ bigger hole appears close by and time slows down until you press the button.
 
 ## What's new since launch
 
+- **v0.8.0** — every Daily now has a twist (Sprint, No power-ups, Power rain or
+  Head start) and three missions. New instant power-ups: Time (+10 s) and
+  Freeze (bots stop for 3 s). A Winter map, a copyable result code,
+  joystick size and sensitivity settings, and Battle fixes (bonuses and bots stay
+  inside the shrinking zone, no false win after being eliminated).
 - **v0.7.0** — the Low graphics preset now targets weaker phones: 30 FPS,
   no dynamic shadows, simpler ground and half as many particles. Changes apply
   immediately in a match. If the frame rate stays low, the game suggests Low
