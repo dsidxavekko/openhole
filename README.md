@@ -44,15 +44,20 @@ count towards the Phase skin.
 - **Solo** — alone, eat as much of the city as you can in 2 minutes.
 - **Battle** — last hole standing; the safe zone shrinks.
 
-- **Daily challenge** — Solo on a city that is the same for everyone that day;
-  the menu card also counts the Shifts you used on it today.
+- **Daily challenge** — Solo on a city that is the same for everyone that day,
+  with a twist of the day (Sprint, No power-ups, Power rain or Head start);
+  the menu card also counts the Shifts you used on it today. Three daily missions
+  (listed in the stats screen) are judged on any match you play that day.
 
-Power-ups: magnet, speed, giant (+2 levels for a while), shield (cannot be eaten).
-They pause while you are shifted.
+Power-ups: magnet, speed, giant (+2 levels for a while), shield (cannot be eaten),
+and two instant ones that only the player can take: time (+10 s, not in Battle)
+and freeze (stops every bot for 3 s, not in Solo). Timed ones pause while you are shifted.
 Eating things quickly in a row builds a combo (up to +50 % points).
 Skins for your hole unlock with records. Settings: sound, vibration, camera shake,
-FPS counter, graphics quality, left-handed layout, screen flashes, bot skill and
-count, map theme (day city, warm suburb, night or sandy Mexico City) and seed.
+FPS counter, graphics quality, left-handed layout, screen flashes, joystick size and
+sensitivity, bot skill and count, map theme (day city, warm suburb, night, sandy
+Mexico City or winter) and seed. The results screen copies a short result code
+(`OH1-C-<seed>-<points>`) to share with friends.
 The Low preset is for weaker phones: 30 FPS, no dynamic shadows, simpler ground
 and half as many particles, while physics and game rules stay unchanged. After
 six sustained seconds below 24 FPS, the game suggests this preset once; it never
