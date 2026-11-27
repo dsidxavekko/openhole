@@ -504,5 +504,20 @@ func _init() -> void:
 	for kind in DailyMods.COUNT:
 		_check(DailyMods.NAMES.has(kind) and DailyMods.DESCS.has(kind), "twist %d has name and description keys" % kind)
 
+	print("Share codes")
+	var share_code := ShareCode.encode("C", 123456, 4159)
+	_check(share_code == "OH1-C-123456-4159", "a code reads mode, seed and score (%s)" % share_code)
+	var share_back := ShareCode.decode(" oh1-c-123456-4159 ")
+	_check(share_back.get("mode") == "C" and share_back.get("seed") == 123456 and share_back.get("score") == 4159, "a code decodes, ignoring case and spaces")
+	_check(ShareCode.decode("OH2-C-1-1").is_empty(), "an unknown version is rejected")
+	_check(ShareCode.decode("OH1-X-1-1").is_empty(), "an unknown mode is rejected")
+	_check(ShareCode.decode("OH1-C-abc-1").is_empty(), "a non-numeric seed is rejected")
+	_check(ShareCode.decode("OH1-C-1").is_empty(), "a short code is rejected")
+	_check(ShareCode.decode("OH1-C--5-1").is_empty(), "a negative number is rejected")
+	_check(ShareCode.letter_for("classic", true) == "D", "a Daily run is always mode D")
+	_check(ShareCode.letter_for("battle", false) == "B", "Battle maps to B")
+	_check(ShareCode.score_text("S", 652) == "65.2%", "solo scores read as a percentage")
+	_check(ShareCode.score_text("C", 4159) == "4159", "other scores read as points")
+
 	print("FAILED: %d" % _fails if _fails else "ALL PASSED")
 	quit(1 if _fails else 0)

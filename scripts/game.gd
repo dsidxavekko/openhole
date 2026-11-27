@@ -1701,7 +1701,11 @@ func _finish() -> void:
 	if not GameState.daily:
 		lines.append(tr("MAP_SEED") % GameState.map_seed)
 	Sfx.play("end")
-	hud.show_results(title, lines)
+	var letter := ShareCode.letter_for(GameState.mode_key(), GameState.daily)
+	var shared_score := int(round(snappedf(_percent(), 0.1) * 10.0)) if mode == GameState.Mode.SOLO else player.points
+	var code := ShareCode.encode(letter, GameState.map_seed, shared_score)
+	var share_text := tr("SHARE_MESSAGE") % [ShareCode.score_text(letter, shared_score), code]
+	hud.show_results(title, lines, share_text)
 	var all_powerups := 0
 	var bot_shifts := 0
 	for h in holes:

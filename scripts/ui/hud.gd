@@ -499,7 +499,7 @@ func _button(text: String, action: Callable) -> Button:
 	return b
 
 
-func show_results(title: String, lines: Array) -> void:
+func show_results(title: String, lines: Array, share_text := "") -> void:
 	joystick.release()
 	joystick.enabled = false
 	_pause.visible = false
@@ -522,6 +522,12 @@ func show_results(title: String, lines: Array) -> void:
 		var l := UiTheme.label(line, 30, HORIZONTAL_ALIGNMENT_CENTER)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_results_box.add_child(l)
+	if not share_text.is_empty():
+		var share := _button(tr("SHARE_RESULT"), func(): pass)
+		share.pressed.connect(func():
+			DisplayServer.clipboard_set(share_text)
+			share.text = tr("SHARE_COPIED"))
+		_results_box.add_child(share)
 	_results_box.add_child(_button(tr("PLAY_AGAIN"), func(): play_again.emit()))
 	_results_box.add_child(_button(tr("MENU"), func(): to_menu.emit()))
 	_results.visible = true

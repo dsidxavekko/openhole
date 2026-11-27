@@ -159,3 +159,6 @@ MOD_POWER_RAIN_DESC,Bonuses everywhere,Бонуси всюди
 MOD_HEAD_START,Head start,Гарний старт
 MOD_HEAD_START_DESC,You start at level 4,Старт одразу з 4 рівня
 DAILY_TWIST,Twist: %s,Особливість: %s
+SHARE_RESULT,Copy result,Скопіювати результат
+SHARE_COPIED,Copied!,Скопійовано!
+SHARE_MESSAGE,I scored %s in OpenHole! Beat it: %s,Мій результат в OpenHole: %s! Побий: %s
