@@ -632,7 +632,7 @@ func _player_input() -> Vector2:
 		return pad
 	if v == Vector2.ZERO:
 		return Vector2.ZERO
-	return v.normalized() * clampf(v.length() * 1.6, 0.0, 1.0)
+	return JoystickPrefs.apply_gain(v, JoystickPrefs.gain_for(GameState.joystick_gain))
 
 
 func _swallow_step() -> void:

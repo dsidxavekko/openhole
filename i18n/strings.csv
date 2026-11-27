@@ -162,3 +162,8 @@ DAILY_TWIST,Twist: %s,Особливість: %s
 SHARE_RESULT,Copy result,Скопіювати результат
 SHARE_COPIED,Copied!,Скопійовано!
 SHARE_MESSAGE,I scored %s in OpenHole! Beat it: %s,Мій результат в OpenHole: %s! Побий: %s
+JOY_SIZE,Joystick size,Розмір джойстика
+JOY_SENS,Joystick sensitivity,Чутливість джойстика
+JOY_SMALL,Small,Малий
+JOY_NORMAL,Normal,Звичайний
+JOY_LARGE,Large,Великий

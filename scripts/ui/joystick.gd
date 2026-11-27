@@ -34,6 +34,7 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.pressed and _touch == -1 and not _blocked(event.position):
 			_touch = event.index
+			max_dist = JoystickPrefs.size_for(GameState.joystick_size)
 			_origin = event.position
 			_pos = _origin
 			vector = Vector2.ZERO

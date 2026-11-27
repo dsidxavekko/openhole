@@ -519,5 +519,13 @@ func _init() -> void:
 	_check(ShareCode.score_text("S", 652) == "65.2%", "solo scores read as a percentage")
 	_check(ShareCode.score_text("C", 4159) == "4159", "other scores read as points")
 
+	print("Joystick prefs")
+	_check(JoystickPrefs.size_for(-3) == JoystickPrefs.SIZES[0] and JoystickPrefs.size_for(9) == JoystickPrefs.SIZES[2], "joystick size index is clamped")
+	_check(JoystickPrefs.apply_gain(Vector2.ZERO, 2.0) == Vector2.ZERO, "no drag means no movement")
+	_check(is_equal_approx(JoystickPrefs.apply_gain(Vector2(0.5, 0), 1.0).length(), 0.5), "gain 1 keeps the drag length")
+	_check(is_equal_approx(JoystickPrefs.apply_gain(Vector2(0.9, 0), 2.4).length(), 1.0), "a high gain saturates at full speed")
+	_check(JoystickPrefs.apply_gain(Vector2(0.2, 0), 2.4).length() > JoystickPrefs.apply_gain(Vector2(0.2, 0), 1.2).length(), "a higher gain reacts sooner")
+	_check(JoystickPrefs.GAINS[JoystickPrefs.DEFAULT] == 1.6, "the default gain keeps the old feel (1.6)")
+
 	print("FAILED: %d" % _fails if _fails else "ALL PASSED")
 	quit(1 if _fails else 0)

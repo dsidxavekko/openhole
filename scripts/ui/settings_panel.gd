@@ -89,6 +89,14 @@ func _build() -> void:
 			posmod(GameState.graphics + dir, GraphicsQuality.KEYS.size()))))
 	_toggle(tr("LEFT_HANDED"), "left_handed", "left_handed")
 	_toggle(tr("FLASHES"), "flashes", "flashes")
+	_row(tr("JOY_SIZE"), _cycler(
+		func(): return tr(JoystickPrefs.NAMES[GameState.joystick_size]),
+		func(dir: int): GameState.set_option("joystick_size", "joystick_size",
+			JoystickPrefs.clamp_index(GameState.joystick_size + dir))))
+	_row(tr("JOY_SENS"), _cycler(
+		func(): return tr(JoystickPrefs.NAMES[GameState.joystick_gain]),
+		func(dir: int): GameState.set_option("joystick_gain", "joystick_gain",
+			JoystickPrefs.clamp_index(GameState.joystick_gain + dir))))
 
 	if not in_menu:
 		return

@@ -41,6 +41,8 @@ var skin := 0
 var graphics := 2
 var left_handed := false
 var flashes := true
+var joystick_size := JoystickPrefs.DEFAULT
+var joystick_gain := JoystickPrefs.DEFAULT
 ## Achievements unlocked in the last match, shown as a toast in the menu.
 var pending_achievements: Array[String] = []
 
@@ -71,6 +73,8 @@ func _ready() -> void:
 	graphics = clampi(Save.get_setting("graphics", GraphicsQuality.Level.HIGH), 0, GraphicsQuality.KEYS.size() - 1)
 	left_handed = Save.get_setting("left_handed", false)
 	flashes = Save.get_setting("flashes", true)
+	joystick_size = JoystickPrefs.clamp_index(Save.get_setting("joystick_size", JoystickPrefs.DEFAULT))
+	joystick_gain = JoystickPrefs.clamp_index(Save.get_setting("joystick_gain", JoystickPrefs.DEFAULT))
 	# Dev helper for screenshots: "-- --quality=low|medium|high".
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--quality="):
